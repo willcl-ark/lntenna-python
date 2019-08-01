@@ -37,13 +37,13 @@ class Connection:
         # self.pipe_file = None
         self.gid = (None,)
         self.geo_region = None
-        self.msg_events = Queue.Queue()
-        self.device_present_events = Queue.Queue()
-        self.connect_events = Queue.Queue()
-        self.disconnect_events = Queue.Queue()
-        self.status_events = Queue.Queue()
-        self.group_create_events = Queue.Queue()
-        self.callback_events = Queue.Queue()
+        self.msg_events = Queue.LifoQueue()
+        self.device_present_events = Queue.LifoQueue()
+        self.connect_events = Queue.LifoQueue()
+        self.disconnect_events = Queue.LifoQueue()
+        self.status_events = Queue.LifoQueue()
+        self.group_create_events = Queue.LifoQueue()
+        self.callback_events = Queue.LifoQueue()
 
     def reset(self):
         if self.api_thread:
@@ -53,7 +53,6 @@ class Connection:
     def sdk_token(self, sdk_token):
         """set sdk_token for the connection
         """
-
         if self.api_thread:
             print("To change SDK tokens, restart the sample app.")
             return
@@ -267,7 +266,7 @@ class Connection:
                 print("{} is not a valid GID.".format(__gid))
             return (None, None)
 
-    def do_send_private(self, gid, message):
+    def send_private(self, gid, message):
         """ Send a private message to a contact
         GID is the GID to send the private message to.
         """
@@ -315,7 +314,7 @@ class Connection:
         return self.api_thread.device_type
 
     @staticmethod
-    def do_list_geo_region():
+    def list_geo_region():
         """ List the available region.
         """
         print("Allowed region:")
