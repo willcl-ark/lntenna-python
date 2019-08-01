@@ -4,15 +4,15 @@ import config
 
 def handle_event(evt):
     return {
-        '__str__': evt.__str__(),
-        'event_type': evt.event_type,
-        'message': evt.message,
-        'status': evt.status,
-        'device_details': evt.device_details,
-        'disconnect_code': evt.disconnect_code,
-        'disconnect_reason': evt.disconnect_reason,
-        'group': evt.group,
-        'device_paths': evt.device_paths
+        "__str__": evt.__str__(),
+        "event_type": evt.event_type,
+        "message": evt.message,
+        "status": evt.status,
+        "device_details": evt.device_details,
+        "disconnect_code": evt.disconnect_code,
+        "disconnect_reason": evt.disconnect_reason,
+        "group": evt.group,
+        "device_paths": evt.device_paths,
     }
 
 
