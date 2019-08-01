@@ -1,7 +1,8 @@
 import traceback
+import Queue
 from time import sleep
 import goTenna
-from utilities.segment_storage import SegmentStorage
+# from utilities.segment_storage import SegmentStorage
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
@@ -35,13 +36,20 @@ class Connection:
         # self.pipe_file = None
         self.gid = (None,)
         self.geo_region = None
+        self.msg_events = Queue.Queue()
+        self.device_present_events = Queue.Queue()
+        self.connect_events = Queue.Queue()
+        self.disconnect_events = Queue.Queue()
+        self.status_events = Queue.Queue()
+        self.group_create_events = Queue.Queue()
+
 
     def reset(self):
         if self.api_thread:
             self.api_thread.join()
         self.__init__()
 
-    def sdk_token(self, rst):
+    def sdk_token(self, sdk_token):
         """set sdk_token for the connection
         """
 
@@ -51,7 +59,7 @@ class Connection:
         try:
             if not SPI_CONNECTION:
                 self.api_thread = goTenna.driver.Driver(
-                    sdk_token=rst,
+                    sdk_token=sdk_token,
                     gid=None,
                     settings=None,
                     event_callback=self.event_callback,
@@ -62,7 +70,7 @@ class Connection:
                     SPI_CHIP_NO,
                     22,
                     27,
-                    rst,
+                    sdk_token,
                     None,
                     None,
                     self.event_callback,
@@ -70,7 +78,7 @@ class Connection:
             self.api_thread.start()
         except ValueError:
             print(
-                "SDK token {} is not valid. Please enter a valid SDK token.".format(rst)
+                "SDK token {} is not valid. Please enter a valid SDK token.".format(sdk_token)
             )
 
     def event_callback(self, evt):
@@ -80,25 +88,29 @@ class Connection:
         """
         if evt.event_type == goTenna.driver.Event.MESSAGE:
             try:
-                print(str(evt))
-                # TODO: check this is txtenna only
+                self.msg_events.put(evt)
+                # TODO: check this affects txtenna only
                 # self.handle_message(evt.message)
             except Exception:
                 traceback.print_exc()
         elif evt.event_type == goTenna.driver.Event.DEVICE_PRESENT:
-            # print(str(evt))
+            self.device_present_events.put(evt)
+            # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 print("Device physically connected")
             else:
                 print("Device physically connected, configure to continue")
         elif evt.event_type == goTenna.driver.Event.CONNECT:
+            self.connect_events.put(evt)
+            # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 print("Device reconnected! Firmware update complete!")
                 self._awaiting_disconnect_after_fw_update[0] = False
             else:
                 print("Connected!")
-                print(str(evt))
         elif evt.event_type == goTenna.driver.Event.DISCONNECT:
+            self.disconnect_events.put(evt)
+            # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 # Do not reset configuration so that the device will reconnect on its
                 # own
@@ -115,6 +127,7 @@ class Connection:
                 self._set_bandwidth = False
         elif evt.event_type == goTenna.driver.Event.STATUS:
             self.status = evt.status
+            self.status_events.put(evt)
         elif evt.event_type == goTenna.driver.Event.GROUP_CREATE:
             index = -1
             for idx, member in enumerate(evt.group.members):
@@ -126,6 +139,7 @@ class Connection:
                     evt.group.gid.gid_val, index
                 )
             )
+            self.group_create_events.put(evt)
 
     def build_callback(self, error_handler=None):
         """ Build a callback for sending to the API thread. May specify a callable
