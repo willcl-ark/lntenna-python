@@ -43,7 +43,6 @@ class Connection:
         self.status_events = Queue.Queue()
         self.group_create_events = Queue.Queue()
 
-
     def reset(self):
         if self.api_thread:
             self.api_thread.join()
