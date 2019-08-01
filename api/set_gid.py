@@ -26,13 +26,9 @@ class SetGid(Resource):
 
     def post(self):
         args = self.reqparse.parse_args(strict=True)
-        logger.debug(args["gid"])
         # purge existing GID
-        # config.connection.api_thread.set_gid(None)
+        config.connection.api_thread.set_gid(None)
         # set new gid
         config.connection.set_gid(gid=args["gid"])
-        logger.debug(config.connection.api_thread.gid._gid_val)
+        logger.debug("GID set as {}".format(config.connection.api_thread.gid._gid_val))
         return {'gid': config.connection.api_thread.gid._gid_val}
-
-        # wait_for(lambda: config.connection.gid is not None, timeout=20)
-        # return handle_event(config.connection.device_present_events.get())
