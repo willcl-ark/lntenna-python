@@ -13,12 +13,10 @@ from threading import Thread
 from time import sleep
 import random
 import string
-import binascii
 import goTenna # The goTenna API
-from segment_storage import SegmentStorage
+from utilities.segment_storage import SegmentStorage
 from txtenna_segment import TxTennaSegment
 from io import BytesIO
-import httplib
 import struct
 import zlib
 

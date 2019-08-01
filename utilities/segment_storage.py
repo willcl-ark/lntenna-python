@@ -4,7 +4,6 @@ This module derived from Rich D's PyMuleTools respository:
 https://github.com/kansas-city-bitcoin-developers/PyMuleTools
 '''
 
-from txtenna_segment import TxTennaSegment
 
 class SegmentStorage:
     def __init__(self):

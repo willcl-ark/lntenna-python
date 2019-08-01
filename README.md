@@ -2,7 +2,7 @@
 
 The TxTenna Python project is an example script that demonstrates how you can use an offline computer with an attached [goTenna Mesh](http://gotennamesh.com) radio to settle Bitcoin transactions on the Bitcoin network. This script also provides an example of how an offline computer can relay over the TxTenna Mesh network arbitrary data received from the [Blockstream Blocksat](https://blockstream.com/satellite/) and uplinked using the [Blocksat API example](https://github.com/Blockstream/satellite/tree/master/api/examples) scripts.
 
-This project is inspired by the ideas of the [Mule Tools](http://mule.tools) initiative and uses a JSON based messaging protocol derived from the mobile [TxTenna App](https://TxTenna.com) and [TxTenna Server](https://github.com/MuleTools/txTenna-server) projects. The [txtenna.py](./txtenna.py) example script builds on the [sample.py](https://github.com/gotenna/PublicSDK/blob/master/python-public-sdk/sample.py) script created for the goTenna [Public SDK](https://gotenna.com/pages/sdk#sdk-signup).
+This project is inspired by the ideas of the [Mule Tools](http://mule.tools) initiative and uses a JSON based messaging protocol derived from the mobile [TxTenna App](https://TxTenna.com) and [TxTenna Server](https://github.com/MuleTools/txTenna-server) projects. The [txtenna.py](txtenna/txtenna.py) example script builds on the [sample.py](https://github.com/gotenna/PublicSDK/blob/master/python-public-sdk/sample.py) script created for the goTenna [Public SDK](https://gotenna.com/pages/sdk#sdk-signup).
 
 ![TxTenna Mesh Relay Architecture](./doc/txtenna_architecture.png?raw=true "TxTenna Mesh Relay Architecture")
 
