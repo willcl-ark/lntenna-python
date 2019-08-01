@@ -5,7 +5,7 @@ import logging
 from flask_restful import Resource, reqparse
 
 import config
-from utilities import handle_event, wait_for
+from utilities import check_connection
 
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
@@ -24,6 +24,7 @@ class SetGid(Resource):
         )
         super(SetGid, self).__init__()
 
+    @check_connection
     def post(self):
         args = self.reqparse.parse_args(strict=True)
         # purge existing GID

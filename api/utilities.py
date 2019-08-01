@@ -1,4 +1,5 @@
-import time
+import time, functools
+import config
 
 
 def handle_event(evt):
@@ -21,3 +22,14 @@ def wait_for(success, timeout=20, interval=1):
         time.sleep(interval)
     if time.time() > start_time + timeout:
         raise ValueError("Error waiting for {}", success)
+
+
+def check_connection(func):
+    def exists(*args, **kwargs):
+        if config.connection is None:
+            return {
+                "status": "Connection does not exist. First create connection using 'sdk_token'"
+            }
+        result = func(*args, **kwargs)
+        return result
+    return exists

@@ -5,7 +5,7 @@ import logging
 from flask_restful import Resource, reqparse
 
 import config
-from utilities import handle_event, wait_for
+from utilities import wait_for, check_connection
 
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
@@ -24,6 +24,7 @@ class SendBroadcast(Resource):
         )
         super(SendBroadcast, self).__init__()
 
+    @check_connection
     def post(self):
         args = self.reqparse.parse_args(strict=True)
         config.connection.send_broadcast(message=args["message"])
