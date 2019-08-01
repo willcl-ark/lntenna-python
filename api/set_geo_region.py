@@ -3,7 +3,6 @@
 import logging
 
 from flask_restful import Resource, reqparse
-
 import config
 from utilities import check_connection
 
