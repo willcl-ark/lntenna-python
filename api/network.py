@@ -2,6 +2,7 @@ import traceback
 import Queue
 from time import sleep
 import goTenna
+
 # from utilities.segment_storage import SegmentStorage
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
@@ -42,6 +43,7 @@ class Connection:
         self.disconnect_events = Queue.Queue()
         self.status_events = Queue.Queue()
         self.group_create_events = Queue.Queue()
+        self.callback_events = Queue.Queue()
 
     def reset(self):
         if self.api_thread:
@@ -77,7 +79,9 @@ class Connection:
             self.api_thread.start()
         except ValueError:
             print(
-                "SDK token {} is not valid. Please enter a valid SDK token.".format(sdk_token)
+                "SDK token {} is not valid. Please enter a valid SDK token.".format(
+                    sdk_token
+                )
             )
 
     def event_callback(self, evt):
@@ -172,13 +176,24 @@ class Connection:
             if success:
                 if results:
                     print("{} succeeded: {}".format(method, results))
+                    self.callback_events.put(
+                        {"method": method, "results": results, "status": "Success"}
+                    )
                 else:
                     print("{} succeeded!".format(method))
+                    self.callback_events.put({"method": method, "status": "success"})
             elif error:
                 if not captured_error_handler[0]:
                     captured_error_handler[0] = default_error_handler
                 print(
                     "{} failed: {}".format(method, captured_error_handler[0](details))
+                )
+                self.callback_events.put(
+                    {
+                        "method": method,
+                        "error_details": captured_error_handler[0](details),
+                        "status": "failed",
+                    }
                 )
 
         return callback
@@ -279,9 +294,7 @@ class Connection:
                 else:
                     print(
                         "Private message to {}: delivery not confirmed, recipient may"
-                        " be offline or out of range".format(
-                            gid.gid_val
-                        )
+                        " be offline or out of range".format(gid.gid_val)
                     )
 
             corr_id = self.api_thread.send_private(
@@ -359,5 +372,3 @@ class Connection:
         if not self.api_thread.connected:
             print("Device must be connected")
         print(self.api_thread.system_info)
-
-
