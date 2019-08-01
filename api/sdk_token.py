@@ -4,7 +4,6 @@ from flask_restful import Resource, reqparse
 
 import config
 from network import Connection
-from utilities import handle_event, wait_for
 
 
 class SdkToken(Resource):
@@ -23,5 +22,4 @@ class SdkToken(Resource):
         args = self.reqparse.parse_args(strict=True)
         config.connection = Connection()
         config.connection.sdk_token(sdk_token=args["sdk_token"])
-        wait_for(lambda: config.connection.device_present_events.qsize() != 0)
-        return handle_event(config.connection.device_present_events.get())
+        return {"sdk_token": config.connection.api_thread.sdk_token}
