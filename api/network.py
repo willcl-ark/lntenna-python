@@ -4,7 +4,6 @@ from time import sleep
 import goTenna
 
 # from utilities.segment_storage import SegmentStorage
-from utilities import handle_event
 from events import Events
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
@@ -370,4 +369,3 @@ class Connection:
         if not self.api_thread.connected:
             return "Device must be connected"
         return self.api_thread.system_info
-

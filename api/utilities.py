@@ -1,4 +1,4 @@
-import time, functools
+import time
 import config
 
 
@@ -32,4 +32,5 @@ def check_connection(func):
             }
         result = func(*args, **kwargs)
         return result
+
     return exists

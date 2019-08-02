@@ -32,4 +32,4 @@ class SetGid(Resource):
         # set new gid
         config.connection.set_gid(gid=args["gid"])
         logger.debug("GID set as {}".format(config.connection.api_thread.gid._gid_val))
-        return {'gid': config.connection.api_thread.gid._gid_val}
+        return {"gid": config.connection.api_thread.gid._gid_val}
