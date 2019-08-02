@@ -21,12 +21,9 @@ class Events:
 
     def get_all_connection(self):
         """Get all connect, disconnect and device present messages
+        Returns a dict of queues, and their respective messages as a list for each queue
         """
-        queues = [
-            self.device_present,
-            self.connect,
-            self.disconnect,
-        ]
+        queues = [self.device_present, self.connect, self.disconnect]
         result = {}
 
         for queue in queues:
@@ -35,4 +32,14 @@ class Events:
                 lst.append(handle_event(queue.get()))
             result[queue._name] = lst
 
+        return result
+
+    def get_all_messages(self):
+        """Returns a dict, where the first entry contains a list of messages received
+        from newest to oldest"""
+        msgs = []
+        result = {self.msg._name: msgs}
+        while not self.msg.empty():
+            msgs.append(self.msg.get())
+        result[self.msg._name] = msgs
         return result
