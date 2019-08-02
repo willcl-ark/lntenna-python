@@ -1,6 +1,6 @@
 #!flask/bin/python
 
-from flask_restful import Api, Resource, reqparse
+from flask_restful import Resource
 
 import config
 import goTenna
