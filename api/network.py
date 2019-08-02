@@ -313,13 +313,14 @@ class Connection:
     def list_geo_region():
         """ List the available region.
         """
-        print("Allowed region:")
-        for region in goTenna.constants.GEO_REGION.DICT:
-            print(
-                "region {} : {}".format(
-                    region, goTenna.constants.GEO_REGION.DICT[region]
-                )
-            )
+        return goTenna.constants.GEO_REGION.DICT
+        # print("Allowed region:")
+        # for region in goTenna.constants.GEO_REGION.DICT:
+        #     print(
+        #         "region {} : {}".format(
+        #             region, goTenna.constants.GEO_REGION.DICT[region]
+        #         )
+        #     )
 
     def set_geo_region(self, region):
         """ Configure the frequencies the device will use.
@@ -340,30 +341,33 @@ class Connection:
         """ Return whether a goTenna can connect.
         For a goTenna to connect, a GID and RF settings must be configured.
         """
+        result = {}
         if self.api_thread.gid:
-            print("GID: OK")
+            result["GID"] = "OK"
         else:
-            print("GID: Not Set")
+            result["GID"] = "Not Set"
         if self._set_tx_power:
-            print("PRO - TX Power: OK")
+            result["PRO - TX Power"] = "OK"
         else:
-            print("PRO - TX Power: Not Set")
+            result["PRO - TX Power"] = "Not Set"
         if self._set_frequencies:
-            print("PRO - Frequencies: OK")
+            result["PRO - Frequencies"] = "OK"
         else:
-            print("PRO - Frequencies: Not Set")
+            result["PRO - Frequencies"] = "Not Set"
         if self._set_bandwidth:
-            print("PRO - Bandwidth: OK")
+            result["PRO - Bandwidth"] = "OK"
         else:
-            print("PRO - Bandwidth: Not Set")
+            result["PRO - Bandwidth"] = "Not Set"
         if self._set_geo_region:
-            print("MESH - Geo region: OK")
+            result["MESH - Geo region"] = "OK"
         else:
-            print("MESH - Geo region: Not Set")
+            result["MESH - Geo region"] = "Not Set"
+        return result
 
     def get_system_info(self):
         """ Get system information.
         """
         if not self.api_thread.connected:
-            print("Device must be connected")
-        print(self.api_thread.system_info)
+            return "Device must be connected"
+        return self.api_thread.system_info
+
