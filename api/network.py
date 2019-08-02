@@ -4,6 +4,8 @@ from time import sleep
 import goTenna
 
 # from utilities.segment_storage import SegmentStorage
+from utilities import handle_event
+from events import Events
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
@@ -37,13 +39,7 @@ class Connection:
         # self.pipe_file = None
         self.gid = (None,)
         self.geo_region = None
-        self.msg_events = Queue.LifoQueue()
-        self.device_present_events = Queue.LifoQueue()
-        self.connect_events = Queue.LifoQueue()
-        self.disconnect_events = Queue.LifoQueue()
-        self.status_events = Queue.LifoQueue()
-        self.group_create_events = Queue.LifoQueue()
-        self.callback_events = Queue.LifoQueue()
+        self.events = Events()
 
     def reset(self):
         if self.api_thread:
@@ -90,20 +86,20 @@ class Connection:
         """
         if evt.event_type == goTenna.driver.Event.MESSAGE:
             try:
-                self.msg_events.put(evt)
+                self.events.msg.put(evt)
                 # TODO: check this affects txtenna only
                 # self.handle_message(evt.message)
             except Exception:
                 traceback.print_exc()
         elif evt.event_type == goTenna.driver.Event.DEVICE_PRESENT:
-            self.device_present_events.put(evt)
+            self.events.device_present.put(evt)
             # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 print("Device physically connected")
             else:
                 print("Device physically connected, configure to continue")
         elif evt.event_type == goTenna.driver.Event.CONNECT:
-            self.connect_events.put(evt)
+            self.events.connect.put(evt)
             # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 print("Device reconnected! Firmware update complete!")
@@ -111,7 +107,7 @@ class Connection:
             else:
                 print("Connected!")
         elif evt.event_type == goTenna.driver.Event.DISCONNECT:
-            self.disconnect_events.put(evt)
+            self.events.disconnect.put(evt)
             # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 # Do not reset configuration so that the device will reconnect on its
@@ -129,7 +125,7 @@ class Connection:
                 self._set_bandwidth = False
         elif evt.event_type == goTenna.driver.Event.STATUS:
             self.status = evt.status
-            self.status_events.put(evt)
+            self.events.status.put(evt)
         elif evt.event_type == goTenna.driver.Event.GROUP_CREATE:
             index = -1
             for idx, member in enumerate(evt.group.members):
@@ -141,7 +137,7 @@ class Connection:
                     evt.group.gid.gid_val, index
                 )
             )
-            self.group_create_events.put(evt)
+            self.events.group_create.put(evt)
 
     def build_callback(self, error_handler=None):
         """ Build a callback for sending to the API thread. May specify a callable
@@ -175,19 +171,19 @@ class Connection:
             if success:
                 if results:
                     print("{} succeeded: {}".format(method, results))
-                    self.callback_events.put(
+                    self.events.callback.put(
                         {"method": method, "results": results, "status": "Success"}
                     )
                 else:
                     print("{} succeeded!".format(method))
-                    self.callback_events.put({"method": method, "status": "success"})
+                    self.events.callback.put({"method": method, "status": "success"})
             elif error:
                 if not captured_error_handler[0]:
                     captured_error_handler[0] = default_error_handler
                 print(
                     "{} failed: {}".format(method, captured_error_handler[0](details))
                 )
-                self.callback_events.put(
+                self.events.callback.put(
                     {
                         "method": method,
                         "error_details": captured_error_handler[0](details),
