@@ -27,11 +27,11 @@ class SendBroadcast(Resource):
     @check_connection
     def post(self):
         args = self.reqparse.parse_args(strict=True)
-        evt_start_len = config.connection.callback_events.qsize()
+        evt_start_len = config.connection.events.callback.qsize()
         logger.debug("send_broadcast evt_start_len is {}".format(evt_start_len))
         config.connection.send_broadcast(message=args["message"])
-        wait_for(lambda: config.connection.callback_events.qsize() > evt_start_len)
+        wait_for(lambda: config.connection.events.callback.qsize() > evt_start_len)
         result = []
-        while config.connection.callback_events.qsize() > evt_start_len:
-            result.append(config.connection.callback_events.get())
+        while config.connection.events.callback.qsize() > evt_start_len:
+            result.append(config.connection.events.callback.get())
         return {"send_broadcast": result}
