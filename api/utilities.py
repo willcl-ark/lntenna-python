@@ -2,12 +2,7 @@ import time
 import config
 
 
-MSG_TYPE = {
-    2: "BROADCAST",
-    3: "EMERGENCY",
-    1: "GROUP",
-    0: "PRIVATE"
-}
+MSG_TYPE = {2: "BROADCAST", 3: "EMERGENCY", 1: "GROUP", 0: "PRIVATE"}
 
 
 def handle_event(evt):
@@ -28,9 +23,10 @@ def handle_text_msg(message):
     msg = message
     payload = {
         "message": msg.message.payload.message,
-        "sender": {"gid":   msg.message.payload.sender.gid_val,
-                   "gid_type":  msg.message.payload.sender.gid_type,
-                   },
+        "sender": {
+            "gid": msg.message.payload.sender.gid_val,
+            "gid_type": msg.message.payload.sender.gid_type,
+        },
         "time_sent": str(msg.message.payload.time_sent),
         "counter": msg.message.payload.counter,
         "sender_initials": msg.message.payload.sender_initials,
