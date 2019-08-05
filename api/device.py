@@ -2,7 +2,8 @@ import traceback
 from time import sleep
 import goTenna
 
-# from utilities.segment_storage import SegmentStorage
+import txtenna
+from utilities.segment_storage import SegmentStorage
 from events import Events
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
@@ -28,13 +29,13 @@ class Connection:
         )
         self._do_encryption = True
         self._awaiting_disconnect_after_fw_update = [False]
-        # self.messageIdx = 0
-        # self.local = False
-        # self.segment_storage = SegmentStorage()
-        # self.send_dir = None
-        # self.receive_dir = None
-        # self.watch_dir_thread = None
-        # self.pipe_file = None
+        self.messageIdx = 0
+        self.local = False
+        self.segment_storage = SegmentStorage()
+        self.send_dir = None
+        self.receive_dir = None
+        self.watch_dir_thread = None
+        self.pipe_file = None
         self.gid = (None,)
         self.geo_region = None
         self.events = Events()
@@ -78,7 +79,7 @@ class Connection:
             )
 
     def event_callback(self, evt):
-        """ The event callback that will print messages from the API.
+        """ The event callback that will store even messages from the API.
         See the documentation for ``goTenna.driver``.
         This will be invoked from the API's thread when events are received.
         """
@@ -312,13 +313,6 @@ class Connection:
         """ List the available region.
         """
         return goTenna.constants.GEO_REGION.DICT
-        # print("Allowed region:")
-        # for region in goTenna.constants.GEO_REGION.DICT:
-        #     print(
-        #         "region {} : {}".format(
-        #             region, goTenna.constants.GEO_REGION.DICT[region]
-        #         )
-        #     )
 
     def set_geo_region(self, region):
         """ Configure the frequencies the device will use.
@@ -368,3 +362,23 @@ class Connection:
         if not self.api_thread.connected:
             return "Device must be connected"
         return self.api_thread.system_info
+
+    ###################
+    # TxTenna methods #
+    ###################
+
+    @staticmethod
+    def rpc_getrawtransaction(tx_id):
+        return txtenna.rpc_getrawtransaction(tx_id)
+
+    def confirm_bitcoin_tx_local(self, _hash, sender_gid):
+        return txtenna.confirm_bitcoin_tx_local(self, _hash, sender_gid)
+
+    def receive_message_from_gateway(self, filename):
+        return txtenna.receive_message_from_gateway(self, filename)
+
+    def handle_message(self, message):
+        return txtenna.handle_message(self, message)
+
+
+
