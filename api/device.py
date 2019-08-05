@@ -1,5 +1,4 @@
 import traceback
-import Queue
 from time import sleep
 import goTenna
 
