@@ -3,7 +3,7 @@
 from flask_restful import Resource, reqparse
 
 import config
-from network import Connection
+from device import Connection
 
 
 class SdkToken(Resource):
