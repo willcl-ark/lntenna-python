@@ -173,14 +173,13 @@ def receive_message_from_gateway(conn, filename):
             "filename": filename,
             "length_bytes": str(len(decoded_data)),
             "unicode": True,
-            "data": str(decoded_data)
+            "data": str(decoded_data),
         }
     except UnicodeDecodeError:
         result["message"] = {
             "filename": filename,
             "unicode": False,
-            "length_bytes": str(len(decoded_data))
-
+            "length_bytes": str(len(decoded_data)),
         }
 
     if conn.pipe_file is not None and os.path.exists(conn.pipe_file) is True:
@@ -222,12 +221,12 @@ def handle_message(conn, message):
         result["segment"] = {
             "txid": segment.payload_id,
             "status": "confirmed",
-            "confirmed_in_block": segment.block
+            "confirmed_in_block": segment.block,
         }
     elif segment.block is 0:
         result["segment"] = {
             "txid": segment.payload_id,
-            "status": "added to the mempool"
+            "status": "added to the mempool",
         }
     elif network is "d":
         # process message data
@@ -252,9 +251,7 @@ def handle_message(conn, message):
 
             # check for confirmed transaction in a new thread
             if conn.local:
-                t = Thread(
-                    target=confirm_bitcoin_tx_local, args=(tx_id, sender_gid)
-                )
+                t = Thread(target=confirm_bitcoin_tx_local, args=(tx_id, sender_gid))
             else:
                 t = Thread(
                     target=conn.confirm_bitcoin_tx_online,
@@ -289,7 +286,6 @@ def mesh_broadcast_rawtx(conn, str_hex_tx, str_hex_tx_hash, network):
     while conn.events.callback.qsize() > evt_start_len:
         result.append(conn.events.callback.get())
     return {"mesh_broadcast_rawtx": result}
-    
 
 
 def rpc_getbalance(conn, rem):
