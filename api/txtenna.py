@@ -20,6 +20,8 @@ import bitcoin.rpc
 from bitcoin.core import x, lx, b2x, b2lx, CMutableTxOut, CMutableTransaction
 from bitcoin.wallet import CBitcoinAddress
 
+from utilities import wait_for
+
 bitcoin.SelectParams("mainnet")
 
 # Configure the Python logging module to print to stderr. In your application,
@@ -261,26 +263,33 @@ def handle_message(conn, message):
             t.start()
 
 
-def mesh_broadcast_rawtx(conn, rem):
+def mesh_broadcast_rawtx(conn, str_hex_tx, str_hex_tx_hash, network):
     """ 
-    Broadcast the raw hex of a Bitcoin transaction and its transaction ID over mainnet or testnet. 
+    Broadcast the raw hex of a Bitcoin transaction and its transaction ID over mainnet
+    or testnet.
     A local copy of txtenna-server must be configured to support the selected network.
 
     Usage: mesh_broadcast_tx RAW_HEX TX_ID NETWORK(m|t)
 
-    eg. txTenna> mesh_broadcast_rawtx 01000000000101bf6c3ed233e8700b42c1369993c2078780015bab7067b9751b7f49f799efbffd0000000017160014f25dbf0eab0ba7e3482287ebb41a7f6d361de6efffffffff02204e00000000000017a91439cdb4242013e108337df383b1bf063561eb582687abb93b000000000017a9148b963056eedd4a02c91747ea667fc34548cab0848702483045022100e92ce9b5c91dbf1c976d10b2c5ed70d140318f3bf2123091d9071ada27a4a543022030c289d43298ca4ca9d52a4c85f95786c5e27de5881366d9154f6fe13a717f3701210204b40eff96588033722f487a52d39a345dc91413281b31909a4018efb330ba2600000000 94406beb94761fa728a2cde836ca636ecd3c51cbc0febc87a968cb8522ce7cc1 m
+    eg. txTenna> mesh_broadcast_rawtx 01000000000101bf6c3ed233e8700b42c1369993c2078780015bab7067b9751b7f49f799efbffd0000000017160014f25dbf0eab0ba7e3482287ebb41a7f6d361de6efffffffff02204e00000000000017a91439cdb4242013e108337df383b1bf063561eb582687abb93b000000000017a9148b963056eedd4a02c91747ea667fc34548cab0848702483045022100e92ce9b5c91dbf1c976d10b2c5ed70d140318f3bf2123091d9071ada27a4a543022030c289d43298ca4ca9d52a4c85f95786c5e27de5881366d9154f6fe13a717f3701210204b40eff96588033722f487a52d39a345dc91413281b31909a4018efb330ba2600000000, 94406beb94761fa728a2cde836ca636ecd3c51cbc0febc87a968cb8522ce7cc1, m
     """
 
+    evt_start_len = conn.events.callback.qsize()
     # TODO: test Z85 binary encoding and add as an option
-    (strHexTx, strHexTxHash, network) = rem.split(" ")
     gid = conn.api_thread.gid.gid_val
     segments = TxTennaSegment.tx_to_segments(
-        gid, strHexTx, strHexTxHash, str(conn.messageIdx), network, False
+        gid, str_hex_tx, str_hex_tx_hash, str(conn.messageIdx), network, False
     )
     for seg in segments:
         conn.send_broadcast(seg.serialize_to_json())
         sleep(10)
     conn.messageIdx = (conn.messageIdx + 1) % 9999
+    wait_for(lambda: conn.events.callback.qsize() > evt_start_len)
+    result = []
+    while conn.events.callback.qsize() > evt_start_len:
+        result.append(conn.events.callback.get())
+    return {"mesh_broadcast_rawtx": result}
+    
 
 
 def rpc_getbalance(conn, rem):
