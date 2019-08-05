@@ -2,6 +2,14 @@ import time
 import config
 
 
+MSG_TYPE = {
+    2: "BROADCAST",
+    3: "EMERGENCY",
+    1: "GROUP",
+    0: "PRIVATE"
+}
+
+
 def handle_event(evt):
     return {
         "__str__": evt.__str__(),
@@ -13,6 +21,32 @@ def handle_event(evt):
         "disconnect_reason": evt.disconnect_reason,
         "group": evt.group,
         "device_paths": evt.device_paths,
+    }
+
+
+def handle_text_msg(message):
+    msg = message
+    payload = {
+        "message": msg.message.payload.message,
+        "sender": {"gid":   msg.message.payload.sender.gid_val,
+                   "gid_type":  msg.message.payload.sender.gid_type,
+                   },
+        "time_sent": str(msg.message.payload.time_sent),
+        "counter": msg.message.payload.counter,
+        "sender_initials": msg.message.payload.sender_initials,
+    }
+    destination = {
+        "gid_type": msg.message.destination.gid_type,
+        "gid_val": msg.message.destination.gid_val,
+        "type": MSG_TYPE[msg.message.destination.gid_type],
+    }
+
+    return {
+        "message": {
+            "destination": destination,
+            "max_hops": msg.message.max_hops,
+            "payload": payload,
+        }
     }
 
 

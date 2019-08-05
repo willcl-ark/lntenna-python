@@ -1,5 +1,5 @@
 import Queue
-from utilities import handle_event
+from utilities import handle_event, handle_text_msg
 
 
 class Events:
@@ -40,6 +40,6 @@ class Events:
         msgs = []
         result = {self.msg._name: msgs}
         while not self.msg.empty():
-            msgs.append(self.msg.get())
+            msgs.append(handle_text_msg(self.msg.get()))
         result[self.msg._name] = msgs
         return result
