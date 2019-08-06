@@ -1,7 +1,7 @@
 #!flask/bin/python
 
 from flask_restful import Resource, reqparse
-import simplejson as json
+import simplejson
 
 import lntenna.api.config as config
 from lntenna.gotenna_core.utilities import check_connection
@@ -22,5 +22,9 @@ class RpcGetrawtransaction(Resource):
     @check_connection
     def get(self):
         args = self.reqparse.parse_args(strict=True)
-        tx = json.dumps(config.connection.rpc_getrawtransaction(args["tx_id"]))
+        tx = simplejson.dumps(
+                config.connection.rpc_getrawtransaction(
+                        args["tx_id"]
+                )
+        )
         return {"transaction": tx}
