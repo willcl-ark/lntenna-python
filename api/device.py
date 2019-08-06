@@ -369,7 +369,11 @@ class Connection:
 
     @staticmethod
     def rpc_getrawtransaction(tx_id):
-        return txtenna.rpc_getrawtransaction(tx_id)
+        """Accepts a txid as bytes.
+        Can convert from hex using bitcoin.core.lx()
+        Returns verbose dict.
+        """
+        return {"transaction":  txtenna.rpc_getrawtransaction(tx_id)}
 
     def confirm_bitcoin_tx_local(self, _hash, sender_gid):
         return txtenna.confirm_bitcoin_tx_local(self, _hash, sender_gid)

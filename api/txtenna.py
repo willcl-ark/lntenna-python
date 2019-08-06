@@ -37,8 +37,8 @@ def rpc_getrawtransaction(tx_id):
     Call local Bitcoin RPC method 'getrawtransaction'
     """
     proxy = bitcoin.rpc.Proxy()
-    r = proxy.getrawtransaction(lx(tx_id), True)
-    return str(r)
+    tx_dict = proxy.getrawtransaction(lx(tx_id), True)
+    return tx_dict
 
 
 def confirm_bitcoin_tx_local(conn, _hash, sender_gid, timeout=30):
