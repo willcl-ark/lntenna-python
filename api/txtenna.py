@@ -329,19 +329,20 @@ def rpc_sendtoaddress(addr, amount):
         return str(traceback.print_exc())
 
 
-def mesh_sendtoaddress(conn, rem):
+def mesh_sendtoaddress(conn, addr, sats, network):
     """ 
-    Create a signed transaction and broadcast it over the connected mesh device. The transaction 
-    spends some amount of satoshis to the specified address from the local bitcoind wallet and selected network. 
+    Create a signed transaction and broadcast it over the connected mesh device.
+    The transaction spends some amount of satoshis to the specified address from the
+    local bitcoind wallet and selected network.
 
     Usage: mesh_sendtoaddress ADDRESS SATS NETWORK(m|t)
 
     eg. txTenna> mesh_sendtoaddress 2N4BtwKZBU3kXkWT7ZBEcQLQ451AuDWiau2 13371337 t
     """
+    result = {}
     try:
 
         proxy = bitcoin.rpc.Proxy()
-        (addr, sats, network) = rem.split()
 
         # Create the txout. This time we create the scriptPubKey from a Bitcoin
         # address.
@@ -353,16 +354,18 @@ def mesh_sendtoaddress(conn, rem):
         signed_transaction = proxy.signrawtransaction(funded_transaction["tx"])
         txhex = b2x(signed_transaction["tx"].serialize())
         txid = b2lx(signed_transaction["tx"].GetTxid())
-        print(
-            "sendtoaddress_mesh (tx, txid, network): " + txhex + ", " + txid,
-            ", " + network,
-        )
+        result["transaction_created"] = {
+            "tx_hex": txhex,
+            "txid": txid,
+            "network": network
+        }
 
         # broadcast over mesh
-        conn.mesh_broadcast_rawtx(txhex + " " + txid + " " + network)
+        result["mesh_broadcast"] = \
+            conn.mesh_broadcast_rawtx(txhex + " " + txid + " " + network)
 
     except Exception:  # pylint: disable=broad-except
-        traceback.print_exc()
+        result["exception_raised"] = str(traceback.print_exc())
 
     try:
         # lock UTXOs used to fund the tx if broadcast successful
@@ -372,10 +375,12 @@ def mesh_sendtoaddress(conn, rem):
         # json_outpoints = [{'txid':b2lx(outpoint.hash), 'vout':outpoint.n}
         #              for outpoint in vin_outpoints]
         # print(str(json_outpoints))
-        proxy.lockunspent(False, vin_outpoints)
+        proxy2 = bitcoin.rpc.Proxy()
+        proxy2.lockunspent(False, vin_outpoints)
 
     except Exception:  # pylint: disable=broad-except
         # TODO: figure out why this is happening
+        # TODO: added a second proxy object above to prevent rpc failures
         print("RPC timeout after calling lockunspent")
 
 

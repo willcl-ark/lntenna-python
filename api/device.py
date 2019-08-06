@@ -413,4 +413,9 @@ class Connection:
             "rpc_sendtoaddress": txtenna.rpc_sendtoaddress(addr, amount)
         }
 
+    def mesh_sendtoaddress(self, addr, sats, network):
+        return {
+            "mesh_sendtoaddress": txtenna.mesh_sendtoaddress(self, addr, sats, network)
+        }
+
 
