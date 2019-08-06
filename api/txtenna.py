@@ -289,7 +289,7 @@ def mesh_broadcast_rawtx(conn, str_hex_tx, str_hex_tx_hash, network):
     return result
 
 
-def rpc_getbalance(conn):
+def rpc_getbalance():
     """
     Call local Bitcoin RPC method 'getbalance'
 
