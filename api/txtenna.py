@@ -282,11 +282,11 @@ def mesh_broadcast_rawtx(conn, str_hex_tx, str_hex_tx_hash, network):
         conn.send_broadcast(seg.serialize_to_json())
         sleep(10)
     conn.messageIdx = (conn.messageIdx + 1) % 9999
-    wait_for(lambda: conn.events.callback.qsize() > evt_start_len)
+    # wait_for(lambda: conn.events.callback.qsize() > evt_start_len)
     result = []
     while conn.events.callback.qsize() > evt_start_len:
         result.append(conn.events.callback.get())
-    return {"mesh_broadcast_rawtx": result}
+    return result
 
 
 def rpc_getbalance(conn, rem):

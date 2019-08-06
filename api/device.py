@@ -391,6 +391,8 @@ class Connection:
         }
 
     def mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network):
-        return txtenna.mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network)
+        return {
+            "mesh_broadcast_rawtx": txtenna.mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network)
+        }
 
 
