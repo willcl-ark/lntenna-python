@@ -357,12 +357,13 @@ def mesh_sendtoaddress(conn, addr, sats, network):
         result["transaction_created"] = {
             "tx_hex": txhex,
             "txid": txid,
-            "network": network
+            "network": network,
         }
 
         # broadcast over mesh
-        result["mesh_broadcast"] = \
-            conn.mesh_broadcast_rawtx(txhex + " " + txid + " " + network)
+        result["mesh_broadcast"] = conn.mesh_broadcast_rawtx(
+            txhex + " " + txid + " " + network
+        )
 
     except Exception:  # pylint: disable=broad-except
         result["exception_raised"] = str(traceback.print_exc())
@@ -386,7 +387,8 @@ def mesh_sendtoaddress(conn, addr, sats, network):
 
 def broadcast_messages(conn, send_dir):
     """ 
-    Watch a particular directory for files with message data to be broadcast over the mesh network
+    Watch a particular directory for files with message data to be broadcast over the
+    mesh network
 
     Usage: broadcast_messages DIRECTORY
 
@@ -395,7 +397,7 @@ def broadcast_messages(conn, send_dir):
 
     if send_dir is not None:
         # start new thread to watch directory
-        conn.watch_dir_thread = Thread(target=watch_messages, args=(send_dir,))
+        conn.watch_dir_thread = Thread(target=watch_messages, args=(conn, send_dir))
         conn.watch_dir_thread.start()
         return {"watching_dir": send_dir}
 
@@ -405,22 +407,22 @@ def watch_messages(conn, send_dir):
     while os.path.exists(send_dir):
         sleep(10)
         after = dict([(f, None) for f in os.listdir(send_dir)])
-        new_files = [f for f in after if not f in before]
+        new_files = [f for f in after if f not in before]
         if new_files:
-            conn.broadcast_message_files(send_dir, new_files)
+            conn.broadcast_message_files(conn, send_dir, new_files)
         before = after
 
 
 def broadcast_message_files(conn, directory, filenames):
     for filename in filenames:
-        print("Broadcasting ", directory + "/" + filename)
+        # print("Broadcasting ", directory + "/" + filename)
         f = open(directory + "/" + filename, "r")
         message_data = f.read()
         f.close()
 
         # binary to ascii encoding and strip out newlines
         encoded = zlib.compress(message_data, 9).encode("base64").replace("\n", "")
-        print("[\n" + encoded.decode() + "\n]")
+        # print("[\n" + encoded.decode() + "\n]")
 
         gid = conn.api_thread.gid.gid_val
         segments = TxTennaSegment.tx_to_segments(

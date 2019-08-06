@@ -373,45 +373,43 @@ class Connection:
         Can convert from hex using bitcoin.core.lx()
         Returns verbose dict.
         """
-        return {"transaction":  txtenna.rpc_getrawtransaction(tx_id)}
+        return {"transaction": txtenna.rpc_getrawtransaction(tx_id)}
 
     def confirm_bitcoin_tx_local(self, _hash, sender_gid):
         return {
-            "confirm_tx_local": txtenna.confirm_bitcoin_tx_local(self, _hash, sender_gid)
+            "confirm_tx_local": txtenna.confirm_bitcoin_tx_local(
+                self, _hash, sender_gid
+            )
         }
 
     def receive_message_from_gateway(self, filename):
         return {
-            "recv_msg_from_gateway": txtenna.receive_message_from_gateway(self, filename)
+            "recv_msg_from_gateway": txtenna.receive_message_from_gateway(
+                self, filename
+            )
         }
 
     def handle_message(self, message):
-        return {
-            "handle_message": txtenna.handle_message(self, message)
-        }
+        return {"handle_message": txtenna.handle_message(self, message)}
 
     def mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network):
         return {
-            "mesh_broadcast_rawtx": txtenna.mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network)
+            "mesh_broadcast_rawtx": txtenna.mesh_broadcast_rawtx(
+                self, str_hex_tx, str_hex_tx_hash, network
+            )
         }
 
     @staticmethod
     def rpc_getbalance():
-        return {
-            "rpc_getbalance": txtenna.rpc_getbalance()
-        }
+        return {"rpc_getbalance": txtenna.rpc_getbalance()}
 
     @staticmethod
     def rpc_sendrawtransaction(_hex):
-        return {
-            "rpc_sendrawtransaction": txtenna.rpc_sendrawtransaction(_hex)
-        }
+        return {"rpc_sendrawtransaction": txtenna.rpc_sendrawtransaction(_hex)}
 
     @staticmethod
     def rpc_sendtoaddress(addr, amount):
-        return {
-            "rpc_sendtoaddress": txtenna.rpc_sendtoaddress(addr, amount)
-        }
+        return {"rpc_sendtoaddress": txtenna.rpc_sendtoaddress(addr, amount)}
 
     def mesh_sendtoaddress(self, addr, sats, network):
         return {
@@ -419,7 +417,4 @@ class Connection:
         }
 
     def broadcast_messages(self, send_dir):
-        return {
-            "broadcast_messages": txtenna.broadcast_messages(self, send_dir)
-        }
-
+        return {"broadcast_messages": txtenna.broadcast_messages(self, send_dir)}
