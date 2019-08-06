@@ -289,18 +289,19 @@ def mesh_broadcast_rawtx(conn, str_hex_tx, str_hex_tx_hash, network):
     return result
 
 
-def rpc_getbalance(conn, rem):
+def rpc_getbalance(conn):
     """
     Call local Bitcoin RPC method 'getbalance'
 
     Usage: rpc_getbalance
     """
+    result = {"getbalance": None}
     try:
         proxy = bitcoin.rpc.Proxy()
         balance = proxy.getbalance()
-        print("getbalance: " + str(balance))
+        return balance
     except Exception:  # pylint: disable=broad-except
-        traceback.print_exc()
+        return str(traceback.print_exc())
 
 
 def rpc_sendrawtransaction(conn, hex):

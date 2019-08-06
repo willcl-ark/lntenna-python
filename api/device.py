@@ -395,4 +395,9 @@ class Connection:
             "mesh_broadcast_rawtx": txtenna.mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network)
         }
 
+    def rpc_getbalance(self):
+        return {
+            "rpc_getbalance": txtenna.rpc_getbalance(self)
+        }
+
 
