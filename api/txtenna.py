@@ -169,14 +169,14 @@ def receive_message_from_gateway(conn, filename):
 
     # send the data to the blocksat pipe
     try:
-        result["message"] = {
+        result = {
             "filename": filename,
             "length_bytes": str(len(decoded_data)),
             "unicode": True,
             "data": str(decoded_data),
         }
     except UnicodeDecodeError:
-        result["message"] = {
+        result = {
             "filename": filename,
             "unicode": False,
             "length_bytes": str(len(decoded_data)),

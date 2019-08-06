@@ -381,7 +381,9 @@ class Connection:
         }
 
     def receive_message_from_gateway(self, filename):
-        return txtenna.receive_message_from_gateway(self, filename)
+        return {
+            "recv_msg_from_gateway": txtenna.receive_message_from_gateway(self, filename)
+        }
 
     def handle_message(self, message):
         # TODO: FIX else clause of txtenna.handle_message()
