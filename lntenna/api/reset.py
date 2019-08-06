@@ -2,9 +2,9 @@
 
 from flask_restful import Resource
 
-import config
+import lntenna.api.config as config
 import goTenna
-from utilities import check_connection
+from lntenna.gotenna_core.utilities import check_connection
 
 
 class Reset(Resource):

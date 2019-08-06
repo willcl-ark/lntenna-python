@@ -1,5 +1,6 @@
+import decimal
 import time
-import config
+import lntenna.api.config
 
 
 MSG_TYPE = {2: "BROADCAST", 3: "EMERGENCY", 1: "GROUP", 0: "PRIVATE"}
@@ -56,7 +57,7 @@ def wait_for(success, timeout=20, interval=1):
 
 def check_connection(func):
     def exists(*args, **kwargs):
-        if config.connection is None:
+        if lntenna.api.config.connection is None:
             return {
                 "status": "Connection does not exist. First create connection using 'sdk_token'"
             }
@@ -64,3 +65,14 @@ def check_connection(func):
         return result
 
     return exists
+
+
+# def decimal_to_string(dict_obj):
+#     for k, v in dict_obj.iteritems():
+#         if isinstance(v, dict):
+#             dict_obj[k] = decimal_to_string(v)
+#         elif isinstance(v, decimal.Decimal):
+#             dict_obj[k] = str(v)
+#         else:
+#             dict_obj[k] = v
+#     return dict_obj

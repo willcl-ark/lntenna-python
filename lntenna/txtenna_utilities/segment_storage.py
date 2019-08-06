@@ -1,8 +1,8 @@
-''' 
-This module derived from Rich D's PyMuleTools respository:
+"""
+This module derived from Rich D's PyMuleTools repository:
 
 https://github.com/kansas-city-bitcoin-developers/PyMuleTools
-'''
+"""
 
 
 class SegmentStorage:
@@ -10,7 +10,8 @@ class SegmentStorage:
         self.__payloads = {}
         self.__transactionLookup = {}
 
-    def get_raw_tx(self, segments):
+    @staticmethod
+    def get_raw_tx(segments):
         raw_tx = ""
         for segment in segments:
             if segment.payload is not None:
@@ -28,20 +29,20 @@ class SegmentStorage:
     def get_transaction_id(self, payload_id):
         if payload_id in self.__payloads:
             for segment in self.__payloads[payload_id]:
-                    if segment.tx_hash is not None:
-                        return segment.tx_hash
+                if segment.tx_hash is not None:
+                    return segment.tx_hash
         return None
 
     def get_network(self, payload_id):
         if payload_id in self.__payloads:
             for segment in self.__payloads[payload_id]:
-                    if segment.tx_hash is not None:
-                        if segment.testnet is True:
-                            return 't'
-                        elif segment.message is True:
-                            return 'd'
-                        else:
-                            return 'm'
+                if segment.tx_hash is not None:
+                    if segment.testnet is True:
+                        return "t"
+                    elif segment.message is True:
+                        return "d"
+                    else:
+                        return "m"
 
     def remove(self, payload_id):
         if payload_id in self.__payloads:
@@ -55,7 +56,7 @@ class SegmentStorage:
         if segment.payload_id in self.__payloads:
             payload = self.__payloads[segment.payload_id]
             payload.append(segment)
-            if segment.sequence_num+1 != len(payload):
+            if segment.sequence_num + 1 != len(payload):
                 self.__payloads[segment.payload_id].sort(key=lambda p: p.sequence_num)
         else:
             self.__payloads[segment.payload_id] = [segment]

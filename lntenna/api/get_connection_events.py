@@ -2,8 +2,8 @@
 
 from flask_restful import Resource
 
-import config
-from utilities import check_connection
+import lntenna.api.config as config
+from lntenna.gotenna_core.utilities import check_connection
 
 
 class GetConnectionEvents(Resource):

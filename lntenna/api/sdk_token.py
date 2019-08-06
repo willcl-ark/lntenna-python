@@ -2,8 +2,8 @@
 
 from flask_restful import Resource, reqparse
 
-import config
-from device import Connection
+import lntenna.api.config as config
+from lntenna.gotenna_core.connection import Connection
 
 
 class SdkToken(Resource):

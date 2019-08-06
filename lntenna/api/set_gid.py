@@ -4,8 +4,8 @@ import logging
 
 from flask_restful import Resource, reqparse
 
-import config
-from utilities import check_connection
+import lntenna.api.config as config
+from lntenna.gotenna_core.utilities import check_connection
 
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
