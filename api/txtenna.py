@@ -233,7 +233,7 @@ def handle_message(conn, message):
         if conn.segment_storage.is_complete(segment.payload_id):
             filename = conn.segment_storage.get_transaction_id(segment.payload_id)
             t = Thread(target=conn.receive_message_from_gateway, args=(filename,))
-            t.start()
+            result["message"] = t.start()
     else:
         # TODO: This entire clause needs sorting!!!
         # process incoming tx segment
@@ -243,7 +243,7 @@ def handle_message(conn, message):
                 "https://api.samouraiwallet.com/v2/txtenna/segments"
             )  # default txtenna-server
             r = requests.post(url, headers=headers, data=payload)
-            print(r.text)
+            result["process_segment"] = r.json()
 
         if conn.segment_storage.is_complete(segment.payload_id):
             sender_gid = message.sender.gid_val
@@ -257,7 +257,8 @@ def handle_message(conn, message):
                     target=conn.confirm_bitcoin_tx_online,
                     args=(tx_id, sender_gid, network),
                 )
-            t.start()
+            result["confirm_check"] = t.start()
+    return result
 
 
 def mesh_broadcast_rawtx(conn, str_hex_tx, str_hex_tx_hash, network):

@@ -386,8 +386,9 @@ class Connection:
         }
 
     def handle_message(self, message):
-        # TODO: FIX else clause of txtenna.handle_message()
-        return txtenna.handle_message(self, message)
+        return {
+            "handle_message": txtenna.handle_message(self, message)
+        }
 
     def mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network):
         return txtenna.mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network)
