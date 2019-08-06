@@ -418,4 +418,8 @@ class Connection:
             "mesh_sendtoaddress": txtenna.mesh_sendtoaddress(self, addr, sats, network)
         }
 
+    def broadcast_messages(self, send_dir):
+        return {
+            "broadcast_messages": txtenna.broadcast_messages(self, send_dir)
+        }
 
