@@ -407,4 +407,10 @@ class Connection:
             "rpc_sendrawtransaction": txtenna.rpc_sendrawtransaction(_hex)
         }
 
+    @staticmethod
+    def rpc_sendtoaddress(addr, amount):
+        return {
+            "rpc_sendtoaddress": txtenna.rpc_sendtoaddress(addr, amount)
+        }
+
 

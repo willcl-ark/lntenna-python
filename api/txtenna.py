@@ -316,7 +316,7 @@ def rpc_sendrawtransaction(_hex):
         return str(traceback.print_exc())
 
 
-def rpc_sendtoaddress(conn, rem):
+def rpc_sendtoaddress(addr, amount):
     """
     Call local Bitcoin RPC method 'sendtoaddress'
 
@@ -324,11 +324,9 @@ def rpc_sendtoaddress(conn, rem):
     """
     try:
         proxy = bitcoin.rpc.Proxy()
-        (addr, amount) = rem.split()
-        r = proxy.sendtoaddress(addr, amount)
-        print("sendtoaddress, transaction id: " + str(r["hex"]))
+        return proxy.sendtoaddress(addr, amount)
     except Exception:  # pylint: disable=broad-except
-        traceback.print_exc()
+        return str(traceback.print_exc())
 
 
 def mesh_sendtoaddress(conn, rem):
