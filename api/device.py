@@ -401,4 +401,10 @@ class Connection:
             "rpc_getbalance": txtenna.rpc_getbalance()
         }
 
+    @staticmethod
+    def rpc_sendrawtransaction(_hex):
+        return {
+            "rpc_sendrawtransaction": txtenna.rpc_sendrawtransaction(_hex)
+        }
+
 

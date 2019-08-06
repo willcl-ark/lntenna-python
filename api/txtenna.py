@@ -298,13 +298,12 @@ def rpc_getbalance():
     result = {"getbalance": None}
     try:
         proxy = bitcoin.rpc.Proxy()
-        balance = proxy.getbalance()
-        return balance
+        return proxy.getbalance()
     except Exception:  # pylint: disable=broad-except
         return str(traceback.print_exc())
 
 
-def rpc_sendrawtransaction(conn, hex):
+def rpc_sendrawtransaction(_hex):
     """
     Call local Bitcoin RPC method 'sendrawtransaction'
 
@@ -312,10 +311,9 @@ def rpc_sendrawtransaction(conn, hex):
     """
     try:
         proxy = bitcoin.rpc.Proxy()
-        r = proxy.sendrawtransaction(hex)
-        print("sendrawtransaction: " + str(r))
+        return proxy.sendrawtransaction(_hex)
     except Exception:  # pylint: disable=broad-except
-        traceback.print_exc()
+        return str(traceback.print_exc())
 
 
 def rpc_sendtoaddress(conn, rem):
