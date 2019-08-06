@@ -58,7 +58,7 @@ def confirm_bitcoin_tx_local(conn, _hash, sender_gid, timeout=30):
         tx = CMutableTransaction.stream_deserialize(BytesIO(raw_tx_bytes))
         r1 = proxy1.sendrawtransaction(tx)
     except:
-        result["status"] = "Invalid Transaction! Could not send to network."
+        result["send_status"] = "Invalid Transaction! Could not send to network."
         return result
 
     # try for `timeout` minutes to confirm the transaction
@@ -73,7 +73,7 @@ def confirm_bitcoin_tx_local(conn, _hash, sender_gid, timeout=30):
             arg = str(sender_gid) + " " + rObj.serialize_to_json()
             conn.send_private(arg)
 
-            result["send status"] = {
+            result["send_status"] = {
                 "Sent to GID": str(sender_gid),
                 "txid": _hash,
                 "status": "added to the mempool",

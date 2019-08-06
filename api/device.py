@@ -376,7 +376,9 @@ class Connection:
         return {"transaction":  txtenna.rpc_getrawtransaction(tx_id)}
 
     def confirm_bitcoin_tx_local(self, _hash, sender_gid):
-        return txtenna.confirm_bitcoin_tx_local(self, _hash, sender_gid)
+        return {
+            "confirm_tx_local": txtenna.confirm_bitcoin_tx_local(self, _hash, sender_gid)
+        }
 
     def receive_message_from_gateway(self, filename):
         return txtenna.receive_message_from_gateway(self, filename)
