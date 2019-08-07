@@ -11,12 +11,12 @@ import bitcoin.core
 import bitcoin.rpc
 import goTenna
 import requests
-from bitcoin.core import CMutableTransaction, CMutableTxOut, b2lx, b2x, lx, x
+from bitcoin.core import CMutableTransaction, CMutableTxOut, b2lx, b2x, x
 from bitcoin.wallet import CBitcoinAddress
 
 from lntenna.gotenna_core.events import Events
-from lntenna.txtenna_utilities.txtenna_segment import TxTennaSegment
 from lntenna.txtenna_utilities.segment_storage import SegmentStorage
+from lntenna.txtenna_utilities.txtenna_segment import TxTennaSegment
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
@@ -36,8 +36,8 @@ class Connection:
         self._set_bandwidth = False
         self._set_geo_region = False
         self._settings = goTenna.settings.GoTennaSettings(
-                rf_settings=goTenna.settings.RFSettings(),
-                geo_settings=goTenna.settings.GeoSettings(),
+            rf_settings=goTenna.settings.RFSettings(),
+            geo_settings=goTenna.settings.GeoSettings(),
         )
         self._do_encryption = True
         self._awaiting_disconnect_after_fw_update = [False]
@@ -62,12 +62,16 @@ class Connection:
     @btc_network.setter
     def btc_network(self, network):
         """
-        :param network: one of "mainnet", "testnet" or "regtest"  only
+        :param network: one of "mainnet", "testnet" or "regtest"
         """
-        bitcoin.SelectParams(network)
         self._btc_network = network
+        bitcoin.SelectParams(self.btc_network)
 
-    def reset(self):
+    @property
+    def btc_proxy(self):
+        return bitcoin.rpc.RawProxy(btc_conf_file=self.btc_conf_file)
+
+    def reset_connection(self):
         if self.api_thread:
             self.api_thread.join()
         self.__init__()
@@ -81,27 +85,27 @@ class Connection:
         try:
             if not SPI_CONNECTION:
                 self.api_thread = goTenna.driver.Driver(
-                        sdk_token=sdk_token,
-                        gid=None,
-                        settings=None,
-                        event_callback=self.event_callback,
+                    sdk_token=sdk_token,
+                    gid=None,
+                    settings=None,
+                    event_callback=self.event_callback,
                 )
             else:
                 self.api_thread = goTenna.driver.SpiDriver(
-                        SPI_BUS_NO,
-                        SPI_CHIP_NO,
-                        22,
-                        27,
-                        sdk_token,
-                        None,
-                        None,
-                        self.event_callback,
+                    SPI_BUS_NO,
+                    SPI_CHIP_NO,
+                    22,
+                    27,
+                    sdk_token,
+                    None,
+                    None,
+                    self.event_callback,
                 )
             self.api_thread.start()
         except ValueError:
             print(
                 "SDK token {} is not valid. Please enter a valid SDK token.".format(
-                        sdk_token
+                    sdk_token
                 )
             )
 
@@ -160,7 +164,7 @@ class Connection:
                     break
             print(
                 "Added to group {}: You are member {}".format(
-                        evt.group.gid.gid_val, index
+                    evt.group.gid.gid_val, index
                 )
             )
             self.events.group_create.put(evt)
@@ -187,7 +191,7 @@ class Connection:
         captured_error_handler = [error_handler]
 
         def callback(
-                correlation_id, success=None, results=None, error=None, details=None
+            correlation_id, success=None, results=None, error=None, details=None
         ):
             """ The default callback to pass to the API.
             See the documentation for ``goTenna.driver``.
@@ -198,7 +202,7 @@ class Connection:
                 if results:
                     print("{} succeeded: {}".format(method, results))
                     self.events.callback.put(
-                            {"method": method, "results": results, "status": "Success"}
+                        {"method": method, "results": results, "status": "Success"}
                     )
                 else:
                     print("{} succeeded!".format(method))
@@ -210,11 +214,11 @@ class Connection:
                     "{} failed: {}".format(method, captured_error_handler[0](details))
                 )
                 self.events.callback.put(
-                        {
-                            "method": method,
-                            "error_details": captured_error_handler[0](details),
-                            "status": "failed",
-                        }
+                    {
+                        "method": method,
+                        "error_details": captured_error_handler[0](details),
+                        "status": "failed",
+                    }
                 )
 
         return callback
@@ -254,7 +258,7 @@ class Connection:
                 payload = goTenna.payload.TextPayload(message)
                 print(
                     "payload valid = {}, message size = {}\n".format(
-                            payload.valid, len(message)
+                        payload.valid, len(message)
                     )
                 )
 
@@ -277,7 +281,7 @@ class Connection:
             if __gid > goTenna.constants.GID_MAX:
                 print(
                     "{} is not a valid GID. The maximum GID is {}".format(
-                            str(__gid), str(goTenna.constants.GID_MAX)
+                        str(__gid), str(goTenna.constants.GID_MAX)
                     )
                 )
                 return (None, __gid)
@@ -319,17 +323,17 @@ class Connection:
                     )
 
             corr_id = self.api_thread.send_private(
-                    gid,
-                    payload,
-                    method_callback,
-                    ack_callback=ack_callback,
-                    encrypt=self._do_encryption,
+                gid,
+                payload,
+                method_callback,
+                ack_callback=ack_callback,
+                encrypt=self._do_encryption,
             )
         except ValueError:
             print("Message too long!")
             return
         self.in_flight_events[corr_id.bytes] = "Private message to {}: {}".format(
-                gid.gid_val, message
+            gid.gid_val, message
         )
 
     def get_device_type(self):
@@ -400,8 +404,7 @@ class Connection:
         """
         Call local Bitcoin RPC method 'getrawtransaction'
         """
-        proxy = bitcoin.rpc.RawProxy(btc_conf_file=self.btc_conf_file)
-        tx_info = proxy.getrawtransaction(tx_id, True)
+        tx_info = self.btc_proxy.getrawtransaction(tx_id, True)
         return tx_info
 
     def confirm_bitcoin_tx_local(self, _hash, sender_gid, timeout=30):
@@ -416,10 +419,9 @@ class Connection:
 
         # pass hex string converted to bytes
         try:
-            proxy1 = bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
             raw_tx_bytes = x(raw_tx)
             tx = CMutableTransaction.stream_deserialize(BytesIO(raw_tx_bytes))
-            r1 = proxy1.sendrawtransaction(tx)
+            r1 = self.btc_proxy.sendrawtransaction(tx)
         except:
             result["send_status"] = "Invalid Transaction! Could not send to network."
             return result
@@ -427,8 +429,7 @@ class Connection:
         # try for `timeout` minutes to confirm the transaction
         for n in range(0, timeout):
             try:
-                proxy2 = bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
-                r2 = proxy2.getrawtransaction(r1, True)
+                r2 = self.btc_proxy.getrawtransaction(r1, True)
 
                 # send zero-conf message back to tx sender
                 confirmations = r2.get("confirmations", 0)
@@ -451,8 +452,7 @@ class Connection:
             for m in range(0, 30):
                 sleep(60)  # sleep for a minute
                 try:
-                    proxy3 = bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
-                    r3 = proxy3.getrawtransaction(r1, True)
+                    r3 = self.btc_proxy.getrawtransaction(r1, True)
                     confirmations = r3.get("confirmations", 0)
                     # keep waiting until 1 or more confirmations
                     if confirmations > 0:
@@ -500,14 +500,14 @@ class Connection:
         # generates prior to writing user data into the API named pipe
         OUT_DATA_HEADER_FORMAT = "64sQ"
         OUT_DATA_DELIMITER = (
-                "vyqzbefrsnzqahgdkrsidzigxvrppato"
-                + '\xe0\xe0$\x1a\xe4["\xb5Z\x0bv\x17\xa7\xa7\x9d'
-                + "\xa5\xd6\x00W}M\xa6TO\xda7\xfaeu:\xac\xdc"
+            "vyqzbefrsnzqahgdkrsidzigxvrppato"
+            + '\xe0\xe0$\x1a\xe4["\xb5Z\x0bv\x17\xa7\xa7\x9d'
+            + "\xa5\xd6\x00W}M\xa6TO\xda7\xfaeu:\xac\xdc"
         )
 
         # Struct is composed of a delimiter and the message length
         out_data_header = struct.pack(
-                OUT_DATA_HEADER_FORMAT, OUT_DATA_DELIMITER, len(data)
+            OUT_DATA_HEADER_FORMAT, OUT_DATA_DELIMITER, len(data)
         )
 
         # Final output data structure
@@ -554,7 +554,7 @@ class Connection:
         elif self.receive_dir is not None and os.path.exists(self.receive_dir) is True:
             # Create file
             dump_f = os.open(
-                    os.path.join(self.receive_dir, filename), os.O_CREAT | os.O_RDWR
+                os.path.join(self.receive_dir, filename), os.O_CREAT | os.O_RDWR
             )
             os.write(dump_f, decoded_data)
             result["status"] = "success"
@@ -614,13 +614,12 @@ class Connection:
                 # check for confirmed transaction in a new thread
                 if self.local:
                     t = Thread(
-                            target=self.confirm_bitcoin_tx_local,
-                            args=(tx_id, sender_gid)
+                        target=self.confirm_bitcoin_tx_local, args=(tx_id, sender_gid)
                     )
                 else:
                     t = Thread(
-                            target=self.confirm_bitcoin_tx_online,
-                            args=(tx_id, sender_gid, network),
+                        target=self.confirm_bitcoin_tx_online,
+                        args=(tx_id, sender_gid, network),
                     )
                 result["confirm_check"] = t.start()
         return result
@@ -641,7 +640,7 @@ class Connection:
         # TODO: test Z85 binary encoding and add as an option
         gid = self.api_thread.gid.gid_val
         segments = TxTennaSegment.tx_to_segments(
-                gid, str_hex_tx, str_hex_tx_hash, str(self.messageIdx), network, False
+            gid, str_hex_tx, str_hex_tx_hash, str(self.messageIdx), network, False
         )
         for seg in segments:
             self.send_broadcast(seg.serialize_to_json())
@@ -661,8 +660,7 @@ class Connection:
         """
         result = {"getbalance": None}
         try:
-            proxy = bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
-            return proxy.getbalance()
+            return self.btc_proxy.getbalance()
         except Exception:  # pylint: disable=broad-except
             return str(traceback.print_exc())
 
@@ -673,8 +671,7 @@ class Connection:
         Usage: rpc_sendrawtransaction RAW_TX_HEX
         """
         try:
-            proxy = bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
-            return proxy.sendrawtransaction(_hex)
+            return self.btc_proxy.sendrawtransaction(_hex)
         except Exception:  # pylint: disable=broad-except
             return str(traceback.print_exc())
 
@@ -685,8 +682,7 @@ class Connection:
         Usage: rpc_sendtoaddress ADDRESS SATS
         """
         try:
-            proxy = bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
-            return proxy.sendtoaddress(addr, amount)
+            return self.btc_proxy.sendtoaddress(addr, amount)
         except Exception:  # pylint: disable=broad-except
             return str(traceback.print_exc())
 
@@ -703,16 +699,16 @@ class Connection:
         result = {}
         try:
 
-            proxy = bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
-
             # Create the txout. This time we create the scriptPubKey from a Bitcoin
             # address.
             txout = CMutableTxOut(sats, CBitcoinAddress(addr).to_scriptPubKey())
 
             # Create the unsigned transaction.
             unfunded_transaction = CMutableTransaction([], [txout])
-            funded_transaction = proxy.fundrawtransaction(unfunded_transaction)
-            signed_transaction = proxy.signrawtransaction(funded_transaction["tx"])
+            funded_transaction = self.btc_proxy.fundrawtransaction(unfunded_transaction)
+            signed_transaction = self.btc_proxy.signrawtransaction(
+                funded_transaction["tx"]
+            )
             txhex = b2x(signed_transaction["tx"].serialize())
             txid = b2lx(signed_transaction["tx"].GetTxid())
             result["transaction_created"] = {
@@ -723,7 +719,7 @@ class Connection:
 
             # broadcast over mesh
             result["mesh_broadcast"] = self.mesh_broadcast_rawtx(
-                    txhex + " " + txid + " " + network
+                txhex + " " + txid + " " + network
             )
 
         except Exception:  # pylint: disable=broad-except
@@ -737,12 +733,11 @@ class Connection:
             # json_outpoints = [{'txid':b2lx(outpoint.hash), 'vout':outpoint.n}
             #              for outpoint in vin_outpoints]
             # print(str(json_outpoints))
-            proxy2 = bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
-            proxy2.lockunspent(False, vin_outpoints)
+            self.btc_proxy.lockunspent(False, vin_outpoints)
 
         except Exception:  # pylint: disable=broad-except
             # TODO: figure out why this is happening
-            # TODO: added a second proxy object above to prevent rpc failures
+            # TODO: added a proxy @property to try and prevent rpc failures
             print("RPC timeout after calling lockunspent")
 
     def broadcast_messages(self, send_dir):
@@ -758,7 +753,7 @@ class Connection:
         if send_dir is not None:
             # start new thread to watch directory
             self.watch_dir_thread = Thread(
-                    target=self.watch_messages, args=(self, send_dir)
+                target=self.watch_messages, args=(self, send_dir)
             )
             self.watch_dir_thread.start()
             return {"watching_dir": send_dir}
@@ -786,7 +781,7 @@ class Connection:
 
             gid = self.api_thread.gid.gid_val
             segments = TxTennaSegment.tx_to_segments(
-                    gid, encoded, filename, str(self.messageIdx), "d", False
+                gid, encoded, filename, str(self.messageIdx), "d", False
             )
             for seg in segments:
                 self.send_broadcast(seg.serialize_to_json())
