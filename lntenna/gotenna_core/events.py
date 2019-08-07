@@ -43,3 +43,13 @@ class Events:
             msgs.append(handle_text_msg(self.msg.get()))
         result[self.msg._name] = msgs
         return result
+
+    def get_all_callback(self):
+        """Returns a dict, where the first entry contains a list of callback messages
+        received from newest to oldest"""
+        msgs = []
+        result = {self.callback._name: msgs}
+        while not self.callback.empty():
+            msgs.append((self.callback.get()))
+        result[self.callback._name] = msgs
+        return result
