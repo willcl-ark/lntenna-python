@@ -15,6 +15,7 @@ from get_system_info import GetSystemInfo
 from list_geo_region import ListGeoRegion
 from reset import Reset
 from rpc_getrawtransaction import RpcGetrawtransaction
+from rpc_rawproxy import RpcRawProxy
 from sdk_token import SdkToken
 from send_broadcast import SendBroadcast
 from set_geo_region import SetGeoRegion
@@ -38,6 +39,7 @@ api.add_resource(GetSystemInfo, "/gotenna/api/v1.0/get_system_info")
 api.add_resource(ListGeoRegion, "/gotenna/api/v1.0/list_geo_region")
 api.add_resource(Reset, "/gotenna/api/v1.0/reset")
 api.add_resource(RpcGetrawtransaction, "/bitcoin/api/v1.0/rpc_getrawtransaction")
+api.add_resource(RpcRawProxy, "/bitcoin/api/v1.0/rpc_rawproxy")
 api.add_resource(SdkToken, "/gotenna/api/v1.0/sdk_token")
 api.add_resource(SendBroadcast, "/gotenna/api/v1.0/send_broadcast")
 api.add_resource(SetGeoRegion, "/gotenna/api/v1.0/set_geo_region")
