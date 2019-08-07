@@ -2,7 +2,6 @@ import os
 import struct
 import traceback
 import zlib
-from io import BytesIO
 from threading import Thread
 from time import sleep
 
@@ -11,7 +10,7 @@ import bitcoin.core
 import bitcoin.rpc
 import goTenna
 import requests
-from bitcoin.core import CMutableTransaction, CMutableTxOut, b2lx, b2x, x
+from bitcoin.core import CMutableTransaction, CMutableTxOut, b2lx, b2x
 from bitcoin.wallet import CBitcoinAddress
 
 from lntenna.gotenna_core.events import Events
@@ -413,18 +412,18 @@ class Connection:
         """
         result = {}
 
-        # send transaction to local bitcoind
-        segments = self.segment_storage.get_by_transaction_id(_hash)
-        raw_tx = self.segment_storage.get_raw_tx(segments)
-
-        # pass hex string converted to bytes
-        try:
-            raw_tx_bytes = x(raw_tx)
-            tx = CMutableTransaction.stream_deserialize(BytesIO(raw_tx_bytes))
-            r1 = self.btc_proxy.sendrawtransaction(tx)
-        except:
-            result["send_status"] = "Invalid Transaction! Could not send to network."
-            return result
+        # # send transaction to local bitcoind
+        # segments = self.segment_storage.get_by_transaction_id(_hash)
+        # raw_tx = self.segment_storage.get_raw_tx(segments)
+        #
+        # # pass hex string converted to bytes
+        # try:
+        #     raw_tx_bytes = x(raw_tx)
+        #     tx = CMutableTransaction.stream_deserialize(BytesIO(raw_tx_bytes))
+        #     r1 = self.btc_proxy.sendrawtransaction(tx)
+        # except:
+        #     result["send_status"] = "Invalid Transaction! Could not send to network."
+        #     return result
 
         # try for `timeout` minutes to confirm the transaction
         for n in range(0, timeout):
@@ -433,9 +432,13 @@ class Connection:
 
                 # send zero-conf message back to tx sender
                 confirmations = r2.get("confirmations", 0)
-                rObj = TxTennaSegment("", "", tx_hash=_hash, block=confirmations)
-                arg = str(sender_gid) + " " + rObj.serialize_to_json()
-                self.send_private(arg)
+                tn = True if self.btc_network is "testnet" else False
+                rObj = TxTennaSegment(
+                    "", "", tx_hash=_hash, block=confirmations, testnet=tn
+                )
+                self.send_private(
+                    gid=str(sender_gid), message=rObj.serialize_to_json()
+                )
 
                 result["send_status"] = {
                     "Sent to GID": str(sender_gid),
