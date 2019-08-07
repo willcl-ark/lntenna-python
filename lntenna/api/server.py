@@ -17,6 +17,7 @@ from reset import Reset
 from rpc_getrawtransaction import RpcGetrawtransaction
 from rpc_rawproxy import RpcRawProxy
 from sdk_token import SdkToken
+from send_api_req import ApiRequest
 from send_broadcast import SendBroadcast
 from set_geo_region import SetGeoRegion
 from set_gid import SetGid
@@ -30,6 +31,7 @@ api = Api(app)
 auth = HTTPBasicAuth()
 connection = None
 
+api.add_resource(ApiRequest, "/gotenna/api/v1.0/api_request")
 api.add_resource(CanConnect, "/gotenna/api/v1.0/can_connect")
 api.add_resource(ConfigureBitcoin, "/bitcoin/api/v1.0/configure")
 api.add_resource(GetConnectionEvents, "/gotenna/api/v1.0/get_connection_events")
