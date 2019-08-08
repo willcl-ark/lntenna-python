@@ -1,5 +1,6 @@
-import decimal
+import ast
 import time
+import requests
 import lntenna.api.config
 
 
@@ -65,6 +66,28 @@ def check_connection(func):
         return result
 
     return exists
+
+
+def prepare_api_request(request):
+    """Takes a dict of the form:
+    {"type": "POST",
+     "url": "www.xyz.com/api/v1.0/order",
+     "params: {"param_1": "start_time=1"},
+     "headers": {"header_1": "header"},
+     "data": {"data_1": "some_data"},
+     "json": {"json_data": {"json_stuff": "data"}}
+     }
+
+     Only working with GET or POST currently
+    """
+    req = requests.Request(request["type"])
+    req.url = request["url"]
+    req.headers = request["headers"] if "headers" in request else {}
+    req.data = ast.literal_eval(request["data"]) if "data" in request else []
+    req.params = ast.literal_eval(request["params"]) if "params" in request else {}
+    req.json = ast.literal_eval(request["json"]) if "json" in request else {}
+    prepped = req.prepare()
+    return prepped
 
 
 # def decimal_to_string(dict_obj):
