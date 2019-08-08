@@ -1,9 +1,15 @@
 #!flask/bin/python
 
 import ast
+import logging
 
+logger = logging.getLogger(__name__)
+
+import simplejson as json
 import requests
 from flask_restful import Resource, reqparse
+
+from lntenna.gotenna_core.utilities import prepare_api_request
 
 
 class ApiRequest(Resource):
@@ -37,24 +43,42 @@ class ApiRequest(Resource):
 
     def post(self):
         args = self.reqparse.parse_args(strict=True)
-        req = requests.Request("POST")
-        req.url = args["url"]
-        req.headers = {} if args["headers"] is None else args["headers"]
-        req.data = [] if args["data"] is None else ast.literal_eval(args["data"])
-        req.params = {} if args["params"] is None else ast.literal_eval(args["params"])
-        req.json = {} if args["json"] is None else ast.literal_eval(args["json"])
-        prepped = req.prepare()
-        result = self.session.send(prepped, timeout=30)
+        logger.debug(args)
+        args["type"] = "POST"
+        prepped = prepare_api_request(args)
+        with requests.Session() as s:
+            result = s.send(prepped, timeout=30)
         return result.text
 
     def get(self):
         args = self.reqparse.parse_args(strict=True)
-        req = requests.Request("GET")
-        req.url = args["url"]
-        req.headers = {} if args["headers"] is None else args["headers"]
-        req.data = [] if args["data"] is None else ast.literal_eval(args["data"])
-        req.params = {} if args["params"] is None else ast.literal_eval(args["params"])
-        req.json = {} if args["json"] is None else ast.literal_eval(args["json"])
-        prepped = req.prepare()
-        result = self.session.send(prepped, timeout=30)
+        args["type"] = "GET"
+        prepped = prepare_api_request(json.dumps(args))
+        with requests.Session() as s:
+            result = s.send(prepped, timeout=30)
         return result.text
+
+    # def post(self):
+    #     args = self.reqparse.parse_args(strict=True)
+    #     args["type"] = "POST"
+    #     req = requests.Request("POST")
+    #     req.url = args["url"]
+    #     req.headers = {} if args["headers"] is None else args["headers"]
+    #     req.data = [] if args["data"] is None else ast.literal_eval(args["data"])
+    #     req.params = {} if args["params"] is None else ast.literal_eval(args["params"])
+    #     req.json = {} if args["json"] is None else ast.literal_eval(args["json"])
+    #     prepped = req.prepare()
+    #     result = self.session.send(prepped, timeout=30)
+    #     return result.text
+    #
+    # def get(self):
+    #     args = self.reqparse.parse_args(strict=True)
+    #     req = requests.Request("GET")
+    #     req.url = args["url"]
+    #     req.headers = {} if args["headers"] is None else args["headers"]
+    #     req.data = [] if args["data"] is None else ast.literal_eval(args["data"])
+    #     req.params = {} if args["params"] is None else ast.literal_eval(args["params"])
+    #     req.json = {} if args["json"] is None else ast.literal_eval(args["json"])
+    #     prepped = req.prepare()
+    #     result = self.session.send(prepped, timeout=30)
+    #     return result.text
