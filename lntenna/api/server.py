@@ -1,11 +1,13 @@
 #!flask/bin/python
 
+import argparse
 import logging
 
 from flask import Flask
 from flask_httpauth import HTTPBasicAuth
 from flask_restful import Api
 
+import lntenna.api.config as config
 from can_connect import CanConnect
 from configure_bitcoin import ConfigureBitcoin
 from get_device_type import GetDeviceType
@@ -13,6 +15,7 @@ from get_connection_events import GetConnectionEvents
 from get_messages import GetMessages
 from get_system_info import GetSystemInfo
 from list_geo_region import ListGeoRegion
+from lntenna.gotenna_core.connection import Connection
 from reset import Reset
 from rpc_getrawtransaction import RpcGetrawtransaction
 from rpc_rawproxy import RpcRawProxy
@@ -29,7 +32,7 @@ logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 app = Flask(__name__)
 api = Api(app)
 auth = HTTPBasicAuth()
-connection = None
+config.connection = Connection()
 
 api.add_resource(ApiRequest, "/gotenna/api/v1.0/api_request")
 api.add_resource(CanConnect, "/gotenna/api/v1.0/can_connect")
@@ -47,5 +50,19 @@ api.add_resource(SendBroadcast, "/gotenna/api/v1.0/send_broadcast")
 api.add_resource(SetGeoRegion, "/gotenna/api/v1.0/set_geo_region")
 api.add_resource(SetGid, "/gotenna/api/v1.0/set_gid")
 
-if __name__ == "__main__":
+
+def main():
     app.run(debug=True)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--gateway",
+        help="Runs the server in Gateway mode. \
+        This should be used on internet-connected machines to make WAN queries",
+    )
+    args = parser.parse_args()
+    if args.gateway:
+        config.connection.gateway = 1
+    main()

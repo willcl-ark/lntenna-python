@@ -3,7 +3,6 @@
 from flask_restful import Resource, reqparse
 
 import lntenna.api.config as config
-from lntenna.gotenna_core.connection import Connection
 
 
 class SdkToken(Resource):
@@ -20,6 +19,5 @@ class SdkToken(Resource):
 
     def post(self):
         args = self.reqparse.parse_args(strict=True)
-        config.connection = Connection()
         config.connection.sdk_token(sdk_token=args["sdk_token"])
         return {"sdk_token": config.connection.api_thread.sdk_token}

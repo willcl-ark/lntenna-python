@@ -53,6 +53,7 @@ class Connection:
         self.btc_conf_file = None
         self._btc_network = "mainnet"
         bitcoin.SelectParams(self._btc_network)
+        self.gateway = 0
 
     @property
     def btc_network(self):
