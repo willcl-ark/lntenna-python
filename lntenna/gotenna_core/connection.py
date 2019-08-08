@@ -121,7 +121,8 @@ class Connection:
             try:
                 self.events.msg.put(evt)
                 # TODO: check this affects txtenna only
-                self.handle_message(evt.message)
+                if self.gateway == 1:
+                    self.handle_message(evt.message)
             except Exception:
                 traceback.print_exc()
         elif evt.event_type == goTenna.driver.Event.DEVICE_PRESENT:
@@ -577,8 +578,7 @@ class Connection:
                 # pass the request dict only through
                 prepped = prepare_api_request(v)
                 with requests.Session() as s:
-                    result = s.send(prepped, timeout=30)
-                print(result, result.text)
+                    return s.send(prepped, timeout=30)
 
     def handle_message(self, message):
         """ handle a txtenna message received over the mesh network
@@ -595,11 +595,9 @@ class Connection:
             for key in payload.iterkeys():
                 if key in MSG_CODES:
                     # pass the full request dict through
-                    self.handle_non_txtenna_msg(payload)
+                    return self.handle_non_txtenna_msg(payload)
         except Exception:
             traceback.print_exc()
-
-        return
 
         # handle the message as if it's a txtenna message
         payload = str(message.payload.message)
