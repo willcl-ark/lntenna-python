@@ -2,6 +2,7 @@ import os
 import struct
 import traceback
 import zlib
+import simplejson as json
 from threading import Thread
 from time import sleep
 
@@ -13,7 +14,9 @@ import requests
 from bitcoin.core import CMutableTransaction, CMutableTxOut, b2lx, b2x
 from bitcoin.wallet import CBitcoinAddress
 
+from lntenna.api.message_codes import MSG_CODES
 from lntenna.gotenna_core.events import Events
+from lntenna.gotenna_core.utilities import prepare_api_request
 from lntenna.txtenna_utilities.segment_storage import SegmentStorage
 from lntenna.txtenna_utilities.txtenna_segment import TxTennaSegment
 
@@ -118,7 +121,7 @@ class Connection:
             try:
                 self.events.msg.put(evt)
                 # TODO: check this affects txtenna only
-                # self.handle_message(evt.message)
+                self.handle_message(evt.message)
             except Exception:
                 traceback.print_exc()
         elif evt.event_type == goTenna.driver.Event.DEVICE_PRESENT:
@@ -437,9 +440,7 @@ class Connection:
                 rObj = TxTennaSegment(
                     "", "", tx_hash=_hash, block=confirmations, testnet=tn
                 )
-                self.send_private(
-                    gid=str(sender_gid), message=rObj.serialize_to_json()
-                )
+                self.send_private(gid=str(sender_gid), message=rObj.serialize_to_json())
 
                 result["send_status"] = {
                     "Sent to GID": str(sender_gid),
@@ -570,12 +571,37 @@ class Connection:
             }
         return result
 
+    def handle_non_txtenna_msg(self, message):
+        for k, v in message.iteritems():
+            if k == "api_request":
+                # pass the request dict only through
+                prepped = prepare_api_request(v)
+                with requests.Session() as s:
+                    result = s.send(prepped, timeout=30)
+                print(result, result.text)
+
     def handle_message(self, message):
         """ handle a txtenna message received over the mesh network
 
         Usage: handle_message message
         """
         result = {}
+        # see if this is a message to be handled as a gateway
+
+        # TODO: DEBUG
+        import traceback
+        try:
+            payload = json.loads(str(message.payload.message))
+            for key in payload.iterkeys():
+                if key in MSG_CODES:
+                    # pass the full request dict through
+                    self.handle_non_txtenna_msg(payload)
+        except Exception:
+            traceback.print_exc()
+
+        return
+
+        # handle the message as if it's a txtenna message
         payload = str(message.payload.message)
         result["payload"] = payload
 
