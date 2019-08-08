@@ -1,18 +1,17 @@
 #!flask/bin/python
 
+import ast
+
 import requests
 from flask_restful import Resource, reqparse
 
 
 class ApiRequest(Resource):
     def __init__(self):
+        self.session = requests.Session()
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(
-            "url",
-            type=str,
-            required=True,
-            help="web address to query",
-            location="json",
+            "url", type=str, required=True, help="web address to query", location="json"
         )
         self.reqparse.add_argument(
             "params",
@@ -29,20 +28,33 @@ class ApiRequest(Resource):
             location="json",
         )
         self.reqparse.add_argument(
-            "data",
-            required=False,
-            help="data to pass form data",
-            location="json",
+            "data", required=False, help="data to pass form data", location="json"
+        )
+        self.reqparse.add_argument(
+            "json", required=False, help="json data", location="json"
         )
         super(ApiRequest, self).__init__()
 
     def post(self):
         args = self.reqparse.parse_args(strict=True)
-        r = requests.post(
-                url=args["url"],
-                params=args["params"],
-                headers=args["headers"],
-                data=args["data"],
-                timeout=30
-        )
-        return r.text
+        req = requests.Request("POST")
+        req.url = args["url"]
+        req.headers = {} if args["headers"] is None else args["headers"]
+        req.data = [] if args["data"] is None else ast.literal_eval(args["data"])
+        req.params = {} if args["params"] is None else ast.literal_eval(args["params"])
+        req.json = {} if args["json"] is None else ast.literal_eval(args["json"])
+        prepped = req.prepare()
+        result = self.session.send(prepped, timeout=30)
+        return result.text
+
+    def get(self):
+        args = self.reqparse.parse_args(strict=True)
+        req = requests.Request("GET")
+        req.url = args["url"]
+        req.headers = {} if args["headers"] is None else args["headers"]
+        req.data = [] if args["data"] is None else ast.literal_eval(args["data"])
+        req.params = {} if args["params"] is None else ast.literal_eval(args["params"])
+        req.json = {} if args["json"] is None else ast.literal_eval(args["json"])
+        prepped = req.prepare()
+        result = self.session.send(prepped, timeout=30)
+        return result.text
