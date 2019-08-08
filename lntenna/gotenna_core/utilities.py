@@ -88,14 +88,3 @@ def prepare_api_request(request):
     req.json = ast.literal_eval(request["json"]) if "json" in request else {}
     prepped = req.prepare()
     return prepped
-
-
-# def decimal_to_string(dict_obj):
-#     for k, v in dict_obj.iteritems():
-#         if isinstance(v, dict):
-#             dict_obj[k] = decimal_to_string(v)
-#         elif isinstance(v, decimal.Decimal):
-#             dict_obj[k] = str(v)
-#         else:
-#             dict_obj[k] = v
-#     return dict_obj
