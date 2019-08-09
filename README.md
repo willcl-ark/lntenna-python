@@ -7,6 +7,8 @@ create a python 2.7 venv and activate it,
 
 `pip install -r requirements.txt`
 
+`pip install -e .`
+
 `lntenna/api/python server.py`
 
 or to run in gateway (online connection) mode:
