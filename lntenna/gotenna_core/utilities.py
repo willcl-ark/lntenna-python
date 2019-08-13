@@ -60,7 +60,8 @@ def check_connection(func):
     def exists(*args, **kwargs):
         if lntenna.api.config.connection is None:
             return {
-                "status": "Connection does not exist. First create connection using 'sdk_token'"
+                "status": "Connection does not exist. \
+                    First create connection using 'sdk_token()'"
             }
         result = func(*args, **kwargs)
         return result

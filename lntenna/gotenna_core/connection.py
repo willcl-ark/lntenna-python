@@ -1,24 +1,13 @@
-import os
-import struct
 import traceback
-import zlib
-import simplejson as json
-from threading import Thread
 from time import sleep
 
 import bitcoin
 import bitcoin.core
 import bitcoin.rpc
 import goTenna
-import requests
-from bitcoin.core import CMutableTransaction, CMutableTxOut, b2lx, b2x
-from bitcoin.wallet import CBitcoinAddress
 
-from lntenna.api.message_codes import MSG_CODES
+import lntenna.txtenna as txtenna
 from lntenna.gotenna_core.events import Events
-from lntenna.gotenna_core.utilities import prepare_api_request
-from lntenna.txtenna_utilities.segment_storage import SegmentStorage
-from lntenna.txtenna_utilities.txtenna_segment import TxTennaSegment
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
@@ -45,7 +34,7 @@ class Connection:
         self._awaiting_disconnect_after_fw_update = [False]
         self.messageIdx = 0
         self.local = False
-        self.segment_storage = SegmentStorage()
+        self.segment_storage = txtenna.SegmentStorage()
         self.send_dir = None
         self.receive_dir = None
         self.watch_dir_thread = None
@@ -398,420 +387,46 @@ class Connection:
             return "Device must be connected"
         return self.api_thread.system_info
 
-    ###################
-    # TxTenna methods #
-    ###################
-
-    # TODO: add set_network() and set_btc_conf_file() calls
+    ###########
+    # txtenna #
+    ###########
 
     def rpc_getrawtransaction(self, tx_id):
-        """
-        Call local Bitcoin RPC method 'getrawtransaction'
-        """
-        tx_info = self.btc_proxy.getrawtransaction(tx_id, True)
-        return tx_info
+        return txtenna.rpc_getrawtransaction(self, tx_id)
 
     def confirm_bitcoin_tx_local(self, _hash, sender_gid, timeout=30):
-        """
-        Confirm bitcoin transaction using local bitcoind instance
-        """
-        result = {}
-
-        # # send transaction to local bitcoind
-        # segments = self.segment_storage.get_by_transaction_id(_hash)
-        # raw_tx = self.segment_storage.get_raw_tx(segments)
-        #
-        # # pass hex string converted to bytes
-        # try:
-        #     raw_tx_bytes = x(raw_tx)
-        #     tx = CMutableTransaction.stream_deserialize(BytesIO(raw_tx_bytes))
-        #     r1 = self.btc_proxy.sendrawtransaction(tx)
-        # except:
-        #     result["send_status"] = "Invalid Transaction! Could not send to network."
-        #     return result
-
-        # try for `timeout` minutes to confirm the transaction
-        for n in range(0, timeout):
-            try:
-                r2 = self.btc_proxy.getrawtransaction(r1, True)
-
-                # send zero-conf message back to tx sender
-                confirmations = r2.get("confirmations", 0)
-                tn = True if self.btc_network is "testnet" else False
-                rObj = TxTennaSegment(
-                    "", "", tx_hash=_hash, block=confirmations, testnet=tn
-                )
-                self.send_private(gid=str(sender_gid), message=rObj.serialize_to_json())
-
-                result["send_status"] = {
-                    "Sent to GID": str(sender_gid),
-                    "txid": _hash,
-                    "status": "added to the mempool",
-                }
-                break
-            except IndexError:
-                # tx_id not yet in the global mempool, sleep for a minute then try again
-                sleep(60)
-                continue
-
-                # wait for at least one confirmation
-            for m in range(0, 30):
-                sleep(60)  # sleep for a minute
-                try:
-                    r3 = self.btc_proxy.getrawtransaction(r1, True)
-                    confirmations = r3.get("confirmations", 0)
-                    # keep waiting until 1 or more confirmations
-                    if confirmations > 0:
-                        break
-                except:
-                    # unknown RPC error, but keep trying
-                    traceback.print_exc()
-
-            if confirmations > 0:
-                # send confirmations message back to tx sender if confirmations > 0
-                rObj = TxTennaSegment("", "", tx_hash=_hash, block=confirmations)
-                arg = str(sender_gid) + " " + rObj.serialize_to_json()
-                self.send_private(arg)
-                result["confirmation_status"] = {
-                    "transaction_from_gid": str(sender_gid),
-                    "txid": _hash,
-                    "status": "confirmed",
-                    "num_confirmations": str_confirmations,
-                }
-            else:
-                result["confirmation_status"] = {
-                    "transaction_from_gid": str(sender_gid),
-                    "txid": _hash,
-                    "status": "unconfirmed",
-                    "detail": "after 30 minutes",
-                }
+        return txtenna.confirm_bitcoin_tx_local(self, _hash, sender_gid, timeout)
 
     @staticmethod
     def create_output_data_struct(data):
-        """Create the output data structure generated by the blocksat receiver
-
-        The "Protocol Sink" block of the blocksat-rx application places the incoming
-        API data into output structures. This function creates the exact same
-        structure that the blocksat-rx application would.
-
-        Args:
-            data : Sequence of bytes to be placed in the output structure
-
-        Returns:
-            Output data structure as sequence of bytes
-
-        """
-
-        # Header of the output data structure that the Blockstream Satellite Receiver
-        # generates prior to writing user data into the API named pipe
-        OUT_DATA_HEADER_FORMAT = "64sQ"
-        OUT_DATA_DELIMITER = (
-            "vyqzbefrsnzqahgdkrsidzigxvrppato"
-            + '\xe0\xe0$\x1a\xe4["\xb5Z\x0bv\x17\xa7\xa7\x9d'
-            + "\xa5\xd6\x00W}M\xa6TO\xda7\xfaeu:\xac\xdc"
-        )
-
-        # Struct is composed of a delimiter and the message length
-        out_data_header = struct.pack(
-            OUT_DATA_HEADER_FORMAT, OUT_DATA_DELIMITER, len(data)
-        )
-
-        # Final output data structure
-        out_data = out_data_header + data
-
-        return out_data
+        return txtenna.create_output_data_struct(data)
 
     def receive_message_from_gateway(self, filename):
-        """
-        Receive message data from a mesh gateway node
-
-        Usage: receive_message_from_gateway filename
-        """
-        result = {}
-
-        # send transaction to local blocksat reader pipe
-        segments = self.segment_storage.get_by_transaction_id(filename)
-        raw_data = self.segment_storage.get_raw_tx(segments).encode("utf-8")
-
-        decoded_data = zlib.decompress(raw_data.decode("base64"))
-
-        delimited_data = self.create_output_data_struct(decoded_data)
-
-        # send the data to the blocksat pipe
-        try:
-            result = {
-                "filename": filename,
-                "length_bytes": str(len(decoded_data)),
-                "unicode": True,
-                "data": str(decoded_data),
-            }
-        except UnicodeDecodeError:
-            result = {
-                "filename": filename,
-                "unicode": False,
-                "length_bytes": str(len(decoded_data)),
-            }
-
-        if self.pipe_file is not None and os.path.exists(self.pipe_file) is True:
-            # Open pipe and write raw data to it
-            pipe_f = os.open(self.pipe_file, os.O_RDWR)
-            os.write(pipe_f, delimited_data)
-            result["status"] = "success"
-        elif self.receive_dir is not None and os.path.exists(self.receive_dir) is True:
-            # Create file
-            dump_f = os.open(
-                os.path.join(self.receive_dir, filename), os.O_CREAT | os.O_RDWR
-            )
-            os.write(dump_f, decoded_data)
-            result["status"] = "success"
-        else:
-            result["status"] = "failure"
-            result["failure"] = {
-                "pipe_missing_at": self.pipe_file,
-                "recv_dir_missing": self.receive_dir,
-            }
-        return result
-
-    def handle_non_txtenna_msg(self, message):
-        for k, v in message.iteritems():
-            if k == "api_request":
-                # pass the request dict only through
-                prepped = prepare_api_request(v)
-                with requests.Session() as s:
-                    return s.send(prepped, timeout=30)
+        return txtenna.receive_message_from_gateway(self, filename)
 
     def handle_message(self, message):
-        """ handle a txtenna message received over the mesh network
-
-        Usage: handle_message message
-        """
-        result = {}
-        # see if this is a message to be handled as a gateway
-
-        # TODO: DEBUG
-        import traceback
-        try:
-            payload = json.loads(str(message.payload.message))
-            for key in payload.iterkeys():
-                if key in MSG_CODES:
-                    # pass the full request dict through
-                    return self.handle_non_txtenna_msg(payload)
-        except Exception:
-            traceback.print_exc()
-
-        # handle the message as if it's a txtenna message
-        payload = str(message.payload.message)
-        result["payload"] = payload
-
-        segment = TxTennaSegment.deserialize_from_json(payload)
-        self.segment_storage.put(segment)
-        network = self.segment_storage.get_network(segment.payload_id)
-
-        # process incoming transaction confirmation from another server
-        if segment.block > 0:
-            result["segment"] = {
-                "txid": segment.payload_id,
-                "status": "confirmed",
-                "confirmed_in_block": segment.block,
-            }
-        elif segment.block is 0:
-            result["segment"] = {
-                "txid": segment.payload_id,
-                "status": "added to the mempool",
-            }
-        elif network is "d":
-            # process message data
-            if self.segment_storage.is_complete(segment.payload_id):
-                filename = self.segment_storage.get_transaction_id(segment.payload_id)
-                t = Thread(target=self.receive_message_from_gateway, args=(filename,))
-                result["message"] = t.start()
-        else:
-            # process incoming tx segment
-            if not self.local:
-                headers = {u"content-type": u"application/json"}
-                url = (
-                    "https://api.samouraiwallet.com/v2/txtenna/segments"
-                )  # default txtenna-server
-                r = requests.post(url, headers=headers, data=payload)
-                result["process_segment"] = r.json()
-
-            if self.segment_storage.is_complete(segment.payload_id):
-                sender_gid = message.sender.gid_val
-                tx_id = self.segment_storage.get_transaction_id(segment.payload_id)
-
-                # check for confirmed transaction in a new thread
-                if self.local:
-                    t = Thread(
-                        target=self.confirm_bitcoin_tx_local, args=(tx_id, sender_gid)
-                    )
-                else:
-                    t = Thread(
-                        target=self.confirm_bitcoin_tx_online,
-                        args=(tx_id, sender_gid, network),
-                    )
-                result["confirm_check"] = t.start()
-        return result
+        return txtenna.handle_message(self, message)
 
     def mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network):
-        """
-        Broadcast the raw hex of a Bitcoin transaction and its transaction ID over
-        mainnet or testnet.
-        A local copy of txtenna-server must be configured to support the selected
-        network.
-
-        Usage: mesh_broadcast_tx RAW_HEX TX_ID NETWORK(m|t)
-
-        eg. txTenna> mesh_broadcast_rawtx 01000000000101bf6c3ed233e8700b42c1369993c2078780015bab7067b9751b7f49f799efbffd0000000017160014f25dbf0eab0ba7e3482287ebb41a7f6d361de6efffffffff02204e00000000000017a91439cdb4242013e108337df383b1bf063561eb582687abb93b000000000017a9148b963056eedd4a02c91747ea667fc34548cab0848702483045022100e92ce9b5c91dbf1c976d10b2c5ed70d140318f3bf2123091d9071ada27a4a543022030c289d43298ca4ca9d52a4c85f95786c5e27de5881366d9154f6fe13a717f3701210204b40eff96588033722f487a52d39a345dc91413281b31909a4018efb330ba2600000000, 94406beb94761fa728a2cde836ca636ecd3c51cbc0febc87a968cb8522ce7cc1, m
-        """
-
-        evt_start_len = self.events.callback.qsize()
-        # TODO: test Z85 binary encoding and add as an option
-        gid = self.api_thread.gid.gid_val
-        segments = TxTennaSegment.tx_to_segments(
-            gid, str_hex_tx, str_hex_tx_hash, str(self.messageIdx), network, False
-        )
-        for seg in segments:
-            self.send_broadcast(seg.serialize_to_json())
-            sleep(10)
-        self.messageIdx = (self.messageIdx + 1) % 9999
-        # wait_for(lambda: self.events.callback.qsize() > evt_start_len)
-        result = []
-        while self.events.callback.qsize() > evt_start_len:
-            result.append(self.events.callback.get())
-        return result
+        return txtenna.mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network)
 
     def rpc_getbalance(self):
-        """
-        Call local Bitcoin RPC method 'getbalance'
+        return txtenna.rpc_getbalance(self)
 
-        Usage: rpc_getbalance
-        """
-        result = {"getbalance": None}
-        try:
-            return self.btc_proxy.getbalance()
-        except Exception:  # pylint: disable=broad-except
-            return str(traceback.print_exc())
-
-    def rpc_sendrawtransaction(self, _hex):
-        """
-        Call local Bitcoin RPC method 'sendrawtransaction'
-
-        Usage: rpc_sendrawtransaction RAW_TX_HEX
-        """
-        try:
-            return self.btc_proxy.sendrawtransaction(_hex)
-        except Exception:  # pylint: disable=broad-except
-            return str(traceback.print_exc())
+    def rpc_sendrawtransaction(self, tx_hex):
+        return txtenna.rpc_sendrawtransaction(self, tx_hex)
 
     def rpc_sendtoaddress(self, addr, amount):
-        """
-        Call local Bitcoin RPC method 'sendtoaddress'
-
-        Usage: rpc_sendtoaddress ADDRESS SATS
-        """
-        try:
-            return self.btc_proxy.sendtoaddress(addr, amount)
-        except Exception:  # pylint: disable=broad-except
-            return str(traceback.print_exc())
+        return txtenna.rpc_sendtoaddress(self, addr, amount)
 
     def mesh_sendtoaddress(self, addr, sats, network):
-        """
-        Create a signed transaction and broadcast it over the connected mesh device.
-        The transaction spends some amount of satoshis to the specified address from the
-        local bitcoind wallet and selected network.
-
-        Usage: mesh_sendtoaddress ADDRESS SATS NETWORK(m|t)
-
-        eg. txTenna> mesh_sendtoaddress 2N4BtwKZBU3kXkWT7ZBEcQLQ451AuDWiau2 13371337 t
-        """
-        result = {}
-        try:
-
-            # Create the txout. This time we create the scriptPubKey from a Bitcoin
-            # address.
-            txout = CMutableTxOut(sats, CBitcoinAddress(addr).to_scriptPubKey())
-
-            # Create the unsigned transaction.
-            unfunded_transaction = CMutableTransaction([], [txout])
-            funded_transaction = self.btc_proxy.fundrawtransaction(unfunded_transaction)
-            signed_transaction = self.btc_proxy.signrawtransaction(
-                funded_transaction["tx"]
-            )
-            txhex = b2x(signed_transaction["tx"].serialize())
-            txid = b2lx(signed_transaction["tx"].GetTxid())
-            result["transaction_created"] = {
-                "tx_hex": txhex,
-                "txid": txid,
-                "network": network,
-            }
-
-            # broadcast over mesh
-            result["mesh_broadcast"] = self.mesh_broadcast_rawtx(
-                txhex + " " + txid + " " + network
-            )
-
-        except Exception:  # pylint: disable=broad-except
-            result["exception_raised"] = str(traceback.print_exc())
-
-        try:
-            # lock UTXOs used to fund the tx if broadcast successful
-            vin_outpoints = set()
-            for txin in funded_transaction["tx"].vin:
-                vin_outpoints.add(txin.prevout)
-            # json_outpoints = [{'txid':b2lx(outpoint.hash), 'vout':outpoint.n}
-            #              for outpoint in vin_outpoints]
-            # print(str(json_outpoints))
-            self.btc_proxy.lockunspent(False, vin_outpoints)
-
-        except Exception:  # pylint: disable=broad-except
-            # TODO: figure out why this is happening
-            # TODO: added a proxy @property to try and prevent rpc failures
-            print("RPC timeout after calling lockunspent")
+        return txtenna.mesh_sendtoaddress(self, addr, sats, network)
 
     def broadcast_messages(self, send_dir):
-        """
-        Watch a particular directory for files with message data to be broadcast over
-        the mesh network
-
-        Usage: broadcast_messages DIRECTORY
-
-        eg. txTenna> broadcast_messages ./downloads
-        """
-
-        if send_dir is not None:
-            # start new thread to watch directory
-            self.watch_dir_thread = Thread(
-                target=self.watch_messages, args=(self, send_dir)
-            )
-            self.watch_dir_thread.start()
-            return {"watching_dir": send_dir}
+        return txtenna.broadcast_messages(self, send_dir)
 
     def watch_messages(self, send_dir):
-        before = {}
-        while os.path.exists(send_dir):
-            sleep(10)
-            after = dict([(f, None) for f in os.listdir(send_dir)])
-            new_files = [f for f in after if f not in before]
-            if new_files:
-                self.broadcast_message_files(self, send_dir, new_files)
-            before = after
+        return txtenna.watch_messages(self, send_dir)
 
     def broadcast_message_files(self, directory, filenames):
-        for filename in filenames:
-            # print("Broadcasting ", directory + "/" + filename)
-            f = open(directory + "/" + filename, "r")
-            message_data = f.read()
-            f.close()
-
-            # binary to ascii encoding and strip out newlines
-            encoded = zlib.compress(message_data, 9).encode("base64").replace("\n", "")
-            # print("[\n" + encoded.decode() + "\n]")
-
-            gid = self.api_thread.gid.gid_val
-            segments = TxTennaSegment.tx_to_segments(
-                gid, encoded, filename, str(self.messageIdx), "d", False
-            )
-            for seg in segments:
-                self.send_broadcast(seg.serialize_to_json())
-                sleep(10)
-            self.messageIdx = (self.messageIdx + 1) % 9999
+        return txtenna.broadcast_message_files(self, directory, filenames)
