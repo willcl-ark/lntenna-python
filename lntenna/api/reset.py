@@ -2,7 +2,7 @@
 
 from flask_restful import Resource
 
-import lntenna.api.config as config
+import lntenna.server.config as config
 import goTenna
 from lntenna.gotenna_core.utilities import check_connection
 

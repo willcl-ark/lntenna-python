@@ -5,7 +5,7 @@ https://github.com/kansas-city-bitcoin-developers/PyMuleTools
 """
 
 import json
-import md5
+import hashlib
 
 from zmq.utils import z85
 
@@ -168,7 +168,7 @@ class TxTennaSegment:
 
         try:
             buf = _id.decode("UTF-8")
-            md5_hash = md5.new(buf).digest()
+            md5_hash = hashlib.md5(buf).hexdigest()
             idBytes = md5_hash[:8]  # first 8 bytes of md5 digest
             if isZ85:
                 tx_id = z85.encode(idBytes.encode("hex"))

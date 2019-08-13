@@ -3,7 +3,7 @@
 import logging
 
 from flask_restful import Resource, reqparse
-import lntenna.api.config as config
+import lntenna.server.config as config
 from lntenna.gotenna_core.utilities import check_connection
 
 logger = logging.getLogger(__name__)

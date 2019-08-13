@@ -8,6 +8,7 @@ import goTenna
 
 import lntenna.txtenna as txtenna
 from lntenna.gotenna_core.events import Events
+from lntenna.server.config import BTC_CONF_PATH
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
@@ -42,7 +43,7 @@ class Connection:
         self.gid = (None,)
         self.geo_region = None
         self.events = Events()
-        self.btc_conf_file = None
+        self.btc_conf_file = BTC_CONF_PATH
         self._btc_network = "mainnet"
         bitcoin.SelectParams(self._btc_network)
         self.gateway = 0
@@ -277,13 +278,13 @@ class Connection:
                         str(__gid), str(goTenna.constants.GID_MAX)
                     )
                 )
-                return (None, __gid)
+                return None, __gid
             gidobj = goTenna.settings.GID(__gid, gid_type)
-            return (gidobj, None)
+            return gidobj, None
         except ValueError:
             if print_message:
                 print("{} is not a valid GID.".format(__gid))
-            return (None, None)
+            return None, None
 
     def send_private(self, gid, message):
         """ Send a private message to a contact

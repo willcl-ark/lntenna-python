@@ -2,7 +2,7 @@
 
 from flask_restful import Resource, reqparse
 
-import lntenna.api.config as config
+import lntenna.server.config as config
 
 
 class SdkToken(Resource):

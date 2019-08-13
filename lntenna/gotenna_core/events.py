@@ -1,22 +1,22 @@
-import Queue
+import queue
 from lntenna.gotenna_core.utilities import handle_event, handle_text_msg
 
 
 class Events:
     def __init__(self):
-        self.msg = Queue.LifoQueue()
+        self.msg = queue.LifoQueue()
         self.msg._name = "msg_events"
-        self.device_present = Queue.LifoQueue()
+        self.device_present = queue.LifoQueue()
         self.device_present._name = "device_present_events"
-        self.connect = Queue.LifoQueue()
+        self.connect = queue.LifoQueue()
         self.connect._name = "connect_events"
-        self.disconnect = Queue.LifoQueue()
+        self.disconnect = queue.LifoQueue()
         self.disconnect._name = "disconnect_events"
-        self.status = Queue.LifoQueue()
+        self.status = queue.LifoQueue()
         self.status._name = "status_events"
-        self.group_create = Queue.LifoQueue()
+        self.group_create = queue.LifoQueue()
         self.group_create._name = "group_create_events"
-        self.callback = Queue.LifoQueue()
+        self.callback = queue.LifoQueue()
         self.callback._name = "callback_events"
 
     def get_all_connection(self):

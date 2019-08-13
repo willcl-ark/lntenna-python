@@ -400,7 +400,7 @@ def broadcast_messages(conn, send_dir):
 
     if send_dir is not None:
         # start new thread to watch directory
-        conn.watch_dir_thread = Thread(target=conn.watch_messages, args=(send_dir))
+        conn.watch_dir_thread = Thread(target=conn.watch_messages, args=send_dir)
         conn.watch_dir_thread.start()
         return {"watching_dir": send_dir}
 

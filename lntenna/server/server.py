@@ -19,29 +19,17 @@ from flask import Flask
 from flask_httpauth import HTTPBasicAuth
 from flask_restful import Api
 
-import lntenna.api.config as config
-from can_connect import CanConnect
-from configure_bitcoin import ConfigureBitcoin
-from get_device_type import GetDeviceType
-from get_connection_events import GetConnectionEvents
-from get_messages import GetMessages
-from get_system_info import GetSystemInfo
-from list_geo_region import ListGeoRegion
+import lntenna.server.config as config
+from lntenna.api import *
+from lntenna.database import db
 from lntenna.gotenna_core.connection import Connection
-from reset import Reset
-from rpc_getrawtransaction import RpcGetrawtransaction
-from rpc_rawproxy import RpcRawProxy
-from sdk_token import SdkToken
-from send_api_req import ApiRequest
-from send_broadcast import SendBroadcast
-from set_geo_region import SetGeoRegion
-from set_gid import SetGid
 
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 app = Flask(__name__)
+app.config["DEBUG"] = True
 api = Api(app)
 auth = HTTPBasicAuth()
 config.connection = Connection()
@@ -65,7 +53,7 @@ api.add_resource(SetGid, "/gotenna/api/v1.0/set_gid")
 
 
 def main(port):
-    app.run(debug=True, port=port)
+    app.run(port=port)
 
 
 if __name__ == "__main__":
@@ -73,4 +61,5 @@ if __name__ == "__main__":
     print(arguments)
     if arguments["--gateway"]:
         config.connection.gateway = 1
+    db.init()
     main(port=arguments["--port"])
