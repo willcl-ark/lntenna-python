@@ -1,8 +1,20 @@
 #!flask/bin/python
 
-import argparse
+"""lntenna API server
+
+Usage:
+    server.py [--gateway] [--port PORT]
+
+Options:
+    -h --help    Show this screen
+    --gateway    Whether to run in gateway mode with online connection
+    --port PORT  Port to run the server on [default: 5000]
+
+"""
+
 import logging
 
+from docopt import docopt
 from flask import Flask
 from flask_httpauth import HTTPBasicAuth
 from flask_restful import Api
@@ -34,6 +46,7 @@ api = Api(app)
 auth = HTTPBasicAuth()
 config.connection = Connection()
 
+
 api.add_resource(ApiRequest, "/gotenna/api/v1.0/api_request")
 api.add_resource(CanConnect, "/gotenna/api/v1.0/can_connect")
 api.add_resource(ConfigureBitcoin, "/bitcoin/api/v1.0/configure")
@@ -51,18 +64,13 @@ api.add_resource(SetGeoRegion, "/gotenna/api/v1.0/set_geo_region")
 api.add_resource(SetGid, "/gotenna/api/v1.0/set_gid")
 
 
-def main():
-    app.run(debug=True)
+def main(port):
+    app.run(debug=True, port=port)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--gateway",
-        help="Runs the server in Gateway mode. \
-        This should be used on internet-connected machines to make WAN queries",
-    )
-    args = parser.parse_args()
-    if args.gateway:
+    arguments = docopt(__doc__)
+    print(arguments)
+    if arguments["--gateway"]:
         config.connection.gateway = 1
-    main()
+    main(port=arguments["--port"])
