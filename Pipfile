@@ -1,0 +1,24 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+
+[packages]
+gotenna = {file = "https://github.com/gotenna/PublicSDK/raw/master/python-public-sdk/goTenna-0.12.5-py3-none-any.whl"}
+blocksat-api = {git = "git://github.com/willcl-ark/blockstream_blocksat.git"}
+submarine-api = {git = "git://github.com/willcl-ark/submarine_swaps.git"}
+docopt = "*"
+flask = "*"
+flask-restful = "*"
+flask-httpauth = "*"
+lntenna-python = {editable = true,path = "."}
+requests = "*"
+sqlalchemy = "*"
+python-bitcoinlib = "*"
+simplejson = "*"
+pyzmq = "*"
+
+[requires]
+python_version = "3.6"
