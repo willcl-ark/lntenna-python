@@ -1,4 +1,4 @@
-from txtenna import (
+from lntenna.txtenna.txtenna import (
     rpc_getrawtransaction,
     confirm_bitcoin_tx_local,
     create_output_data_struct,
@@ -15,4 +15,4 @@ from txtenna import (
     broadcast_message_files,
 )
 
-from segment_storage import SegmentStorage
+from lntenna.txtenna.segment_storage import SegmentStorage

@@ -20,9 +20,8 @@ connection = None
 # }
 
 # Bitcoin
-SATOSHIS = 100000000
+SATOSHIS = 100_000_000
 BTC_CONF_PATH = "/Users/will/Library/Application Support/Bitcoin/testnet3/bitcoin.conf"
 
 # Database
 DB_DIR = "/.lntenna/"
-

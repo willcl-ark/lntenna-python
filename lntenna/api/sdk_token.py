@@ -20,4 +20,4 @@ class SdkToken(Resource):
     def post(self):
         args = self.reqparse.parse_args(strict=True)
         config.connection.sdk_token(sdk_token=args["sdk_token"])
-        return {"sdk_token": config.connection.api_thread.sdk_token}
+        return {"sdk_token": config.connection.api_thread.sdk_token.decode('utf-8')}
