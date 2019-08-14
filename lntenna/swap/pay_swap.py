@@ -2,8 +2,10 @@ from lntenna.server.config import SATOSHIS
 from lntenna.server.bitcoind_password import BITCOIND_PW
 from lntenna.database import db
 from lntenna.bitcoin.rpc import BitcoinProxy
+from lntenna.swap.utilities import try_json
 
 
+@try_json
 def pay_swap(uuid: str):
     btc = BitcoinProxy()
     swap_amount, swap_p2sh_address = db.lookup_pay_details(uuid)

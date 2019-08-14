@@ -168,7 +168,7 @@ def lookup_bump(uuid):
 def lookup_refund_addr(uuid):
     conn = engine.connect()
     s = select([orders.c.refund_address]).where(orders.c.uuid == uuid)
-    return conn.execute(s).fetchone().values()
+    return conn.execute(s).fetchone().values()[0]
 
 
 def lookup_pay_details(uuid):

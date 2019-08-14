@@ -1,7 +1,9 @@
 from blocksat_api import blocksat
 from lntenna.database import db
+from lntenna.swap.utilities import try_json
 
 
+@try_json
 def bump_blocksat_order(uuid: str, bid_increase: str):
     # lookup the order from blocksat table
     blocksat_uuid, auth_token, satellite_url = db.lookup_bump(uuid=uuid)
@@ -12,5 +14,4 @@ def bump_blocksat_order(uuid: str, bid_increase: str):
             bid_increase=bid_increase,
             satellite_url=satellite_url,
     )
-    return {"result": result.text,
-            "code": result.status_code}
+    return result

@@ -23,3 +23,19 @@ def clock(func):
         return result
 
     return clocked
+
+
+def try_json(func):
+    @functools.wraps(func)
+    def _try_json(*args, **kwargs):
+        result = func(*args, **kwargs)
+        if hasattr(result, "status_code"):
+            _result ={"status_code": result.status_code}
+        if hasattr(result, "text"):
+            try:
+                _result["response"] = result.json()
+            except Exception:
+                _result["response"] = result.text
+            return _result
+        return result
+    return _try_json
