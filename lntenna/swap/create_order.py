@@ -12,7 +12,7 @@ def create_order(message: str, bid: str, network: str):
         satellite_url = SATELLITE_API
     else:
         return "Invalid network"
-
+    print(satellite_url)
     uuid = uuid4()
     db.add_order(uuid=str(uuid), message=message, network=network)
     result = blocksat.place(message=message, bid=bid, satellite_url=satellite_url)
@@ -34,4 +34,4 @@ def create_order(message: str, bid: str, network: str):
     except (ValueError, KeyError):
         response = result.text
         code = result.status_code
-    return {"result": response, "uuid": uuid, "code": code, "db_status": db_status}
+    return {"order": response, "uuid": str(uuid), "code": code, "db_status": db_status}
