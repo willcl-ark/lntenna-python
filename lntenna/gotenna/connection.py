@@ -1,15 +1,11 @@
 import traceback
 from time import sleep
 
-import bitcoin
-import bitcoin.core
-import bitcoin.rpc
 import goTenna
 
 import lntenna.txtenna as txtenna
 from lntenna.gotenna.events import Events
 from lntenna.bitcoin.rpc import BitcoinProxy
-from lntenna.server.config import BTC_CONF_PATH
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
