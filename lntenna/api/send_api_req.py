@@ -4,7 +4,7 @@ import ast
 import requests
 from flask_restful import Resource, reqparse
 
-from lntenna.gotenna_core.utilities import prepare_api_request
+from lntenna.gotenna.utilities import prepare_api_request
 
 
 class ApiRequest(Resource):

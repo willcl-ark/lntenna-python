@@ -1,5 +1,5 @@
 import queue
-from lntenna.gotenna_core.utilities import handle_event, handle_text_msg
+from lntenna.gotenna.utilities import handle_event, handle_text_msg
 
 
 class Events:

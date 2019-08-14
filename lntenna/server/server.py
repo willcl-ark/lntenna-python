@@ -22,7 +22,7 @@ from flask_restful import Api
 import lntenna.server.config as config
 from lntenna.api import *
 from lntenna.database import db
-from lntenna.gotenna_core.connection import Connection
+from lntenna.gotenna.connection import Connection
 
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"

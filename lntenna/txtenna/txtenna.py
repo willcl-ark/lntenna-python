@@ -13,7 +13,7 @@ from bitcoin.core import CMutableTransaction, CMutableTxOut, b2lx, b2x, x
 from bitcoin.wallet import CBitcoinAddress
 
 from lntenna.api.message_codes import MSG_CODES
-from lntenna.gotenna_core.utilities import prepare_api_request
+from lntenna.gotenna.utilities import prepare_api_request
 from lntenna.txtenna.txtenna_segment import TxTennaSegment
 
 

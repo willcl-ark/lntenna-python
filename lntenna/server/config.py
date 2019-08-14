@@ -25,3 +25,11 @@ BTC_CONF_PATH = "/Users/will/Library/Application Support/Bitcoin/testnet3/bitcoi
 
 # Database
 DB_DIR = "/.lntenna/"
+
+# Swap Server API URL
+SUBMARINE_API = "https://submarineswaps.org/api/v0"
+# SUBMARINE_API = "http://localhost:9889/api/v0"
+
+# Blocksat API URLs
+SATELLITE_API = "https://api.blockstream.space"
+TESTNET_SATELLITE_API = "https://api.blockstream.space/testnet"
