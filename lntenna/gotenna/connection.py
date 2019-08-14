@@ -8,6 +8,7 @@ import goTenna
 
 import lntenna.txtenna as txtenna
 from lntenna.gotenna.events import Events
+from lntenna.bitcoin.rpc import BitcoinProxy
 from lntenna.server.config import BTC_CONF_PATH
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
@@ -43,26 +44,8 @@ class Connection:
         self.gid = (None,)
         self.geo_region = None
         self.events = Events()
-        self.btc_conf_file = BTC_CONF_PATH
-        self._btc_network = "mainnet"
-        bitcoin.SelectParams(self._btc_network)
+        self.btc = BitcoinProxy()
         self.gateway = 0
-
-    @property
-    def btc_network(self):
-        return self._btc_network
-
-    @btc_network.setter
-    def btc_network(self, network):
-        """
-        :param network: one of "mainnet", "testnet" or "regtest"
-        """
-        self._btc_network = network
-        bitcoin.SelectParams(self.btc_network)
-
-    @property
-    def btc_proxy(self):
-        return bitcoin.rpc.RawProxy(btc_conf_file=self.btc_conf_file)
 
     def reset_connection(self):
         if self.api_thread:

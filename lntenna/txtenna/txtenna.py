@@ -21,7 +21,7 @@ def rpc_getrawtransaction(conn, tx_id):
     """
     Call local Bitcoin RPC method 'getrawtransaction'
     """
-    tx_info = conn.btc_proxy.getrawtransaction(tx_id, True)
+    tx_info = conn.btc.raw_proxy.getrawtransaction(tx_id, True)
     return tx_info
 
 
@@ -39,7 +39,7 @@ def confirm_bitcoin_tx_local(conn, _hash, sender_gid, timeout=30):
     try:
         raw_tx_bytes = x(raw_tx)
         tx = CMutableTransaction.stream_deserialize(BytesIO(raw_tx_bytes))
-        r1 = conn.btc_proxy.sendrawtransaction(tx)
+        r1 = conn.btc.raw_proxy.sendrawtransaction(tx)
     except:
         result["send_status"] = "Invalid Transaction! Could not send to network."
         return result
@@ -47,7 +47,7 @@ def confirm_bitcoin_tx_local(conn, _hash, sender_gid, timeout=30):
     # try for `timeout` minutes to confirm the transaction
     for n in range(0, timeout):
         try:
-            r2 = conn.btc_proxy.getrawtransaction(r1, True)
+            r2 = conn.btc.raw_proxy.getrawtransaction(r1, True)
 
             # send zero-conf message back to tx sender
             confirmations = r2.get("confirmations", 0)
@@ -72,7 +72,7 @@ def confirm_bitcoin_tx_local(conn, _hash, sender_gid, timeout=30):
         for m in range(0, 30):
             sleep(60)  # sleep for a minute
             try:
-                r3 = conn.btc_proxy.getrawtransaction(r1, True)
+                r3 = conn.btc.raw_proxy.getrawtransaction(r1, True)
                 confirmations = r3.get("confirmations", 0)
                 # keep waiting until 1 or more confirmations
                 if confirmations > 0:
@@ -306,7 +306,7 @@ def rpc_getbalance(conn):
     """
     result = {"getbalance": None}
     try:
-        return conn.btc_proxy.getbalance()
+        return conn.btc.raw_proxy.getbalance()
     except Exception:  # pylint: disable=broad-except
         return str(traceback.print_exc())
 
@@ -318,7 +318,7 @@ def rpc_sendrawtransaction(conn, tx_hex):
     Usage: rpc_sendrawtransaction RAW_TX_HEX
     """
     try:
-        return conn.btc_proxy.sendrawtransaction(tx_hex)
+        return conn.btc.raw_proxy.sendrawtransaction(tx_hex)
     except Exception:  # pylint: disable=broad-except
         return str(traceback.print_exc())
 
@@ -330,7 +330,7 @@ def rpc_sendtoaddress(conn, addr, amount):
     Usage: rpc_sendtoaddress ADDRESS SATS
     """
     try:
-        return conn.btc_proxy.sendtoaddress(addr, amount)
+        return conn.btc.raw_proxy.sendtoaddress(addr, amount)
     except Exception:  # pylint: disable=broad-except
         return str(traceback.print_exc())
 
@@ -354,8 +354,8 @@ def mesh_sendtoaddress(conn, addr, sats, network):
 
         # Create the unsigned transaction.
         unfunded_transaction = CMutableTransaction([], [txout])
-        funded_transaction = conn.btc_proxy.fundrawtransaction(unfunded_transaction)
-        signed_transaction = conn.btc_proxy.signrawtransaction(funded_transaction["tx"])
+        funded_transaction = conn.btc.raw_proxy.fundrawtransaction(unfunded_transaction)
+        signed_transaction = conn.btc.raw_proxy.signrawtransaction(funded_transaction["tx"])
         txhex = b2x(signed_transaction["tx"].serialize())
         txid = b2lx(signed_transaction["tx"].GetTxid())
         result["transaction_created"] = {
@@ -380,7 +380,7 @@ def mesh_sendtoaddress(conn, addr, sats, network):
         # json_outpoints = [{'txid':b2lx(outpoint.hash), 'vout':outpoint.n}
         #              for outpoint in vin_outpoints]
         # print(str(json_outpoints))
-        conn.btc_proxy.lockunspent(False, vin_outpoints)
+        conn.btc.raw_proxy.lockunspent(False, vin_outpoints)
 
     except Exception:  # pylint: disable=broad-except
         # TODO: figure out why this is happening
