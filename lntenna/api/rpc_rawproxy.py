@@ -1,5 +1,6 @@
 #!flask/bin/python
 
+import ast
 import simplejson
 from flask_restful import Resource, reqparse
 
@@ -34,7 +35,8 @@ class RpcRawProxy(Resource):
                 getattr(config.connection.btc_proxy, args["command"])
             )
         else:
+            args["args"] = ast.literal_eval(args["args"])
             result = simplejson.dumps(
-                getattr(config.connection.btc_proxy, args["command"])(args["args"])
+                getattr(config.connection.btc_proxy, args["command"])(*args["args"])
             )
         return {args["command"]: result}
