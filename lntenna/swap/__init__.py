@@ -8,3 +8,4 @@ from lntenna.swap.pay_swap import pay_swap
 from lntenna.swap.check_swap import check_swap
 from lntenna.swap.swap_rates import swap_rates
 from lntenna.swap.utilities import create_random_message
+from lntenna.swap.decode_redeemscript import compare_redeemscript_invoice
