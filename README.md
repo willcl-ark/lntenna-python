@@ -286,8 +286,10 @@ pay_swap = s.pay_swap(uuid=blocksat_order["uuid"])
 
 #### check for swap preimage denoting payment
 ```python
-check_swap_status = s.check_swap(uuid=blocksat_order["uuid"])
-while not hasattr(check_swap_status, "payment_secret"):
-    time.sleep(5)
+while True:
     check_swap_status = s.check_swap(uuid=blocksat_order["uuid"])
+    if "response" in check_swap_status:
+        if "payment_secret" in check_swap_status["response"]:
+            break
+    time.sleep(5)
 ```
