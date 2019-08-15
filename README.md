@@ -258,7 +258,7 @@ blocksat_order = s.create_order(message=msg, bid="10000", network="testnet")
 ```
 
 #### lookup the invoice received on the swap server to check payable
-```pythonpython
+```python
 invoice_lookup = s.get_invoice_details(
     invoice=blocksat_order["response"]["lightning_invoice"]["payreq"], network="testnet"
 )
@@ -272,7 +272,23 @@ assert s.get_address_details(refund_addr, 'testnet').status_code == 200
 swap = s.get_swap_quote(uuid=blocksat_order["uuid"], invoice=blocksat_order["response"]["lightning_invoice"]["payreq"], network='testnet')
 ```
 
-* TODO: might be best to parse the BOLT11 invoice and redeem script locally then we could check pubkey/destination, and payment_hash ourselves...
+#### decode the invoice
+```python
+from lntenna.lightning.lnaddr import lndecode
+
+# attempt decode, raise value error if signature mismatch
+decoded_inv = lndecode(blocksat_order["response"]["lightning_invoice"]["payreq"])
+```
+
+#### Check the Pubkey from the invoice matches pre-known keys
+
+This key might be supplied with invoice, or derived from signature, it doesn't matter.
+```python
+from lntenna.server.config import BLOCKSAT_NODE_PUBKEYS
+from binascii import hexlify
+
+assert hexlify(decoded_inv.pubkey.serialize()).decode("utf-8") in BLOCKSAT_NODE_PUBKEYS
+```
 
 #### check the redeem_script matches the lightning invoice payment_hash
 ```python
