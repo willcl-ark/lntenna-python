@@ -30,6 +30,10 @@ DB_DIR = "/.lntenna/"
 SUBMARINE_API = "https://submarineswaps.org/api/v0"
 # SUBMARINE_API = "http://localhost:9889/api/v0"
 
-# Blocksat API URLs
+# Blocksat details
 SATELLITE_API = "https://api.blockstream.space"
 TESTNET_SATELLITE_API = "https://api.blockstream.space/testnet"
+BLOCKSAT_NODE_PUBKEYS = [
+    "039d2201586141a3fff708067aa270aa4f6a724227d5740254d4e34da262a79c2a",
+    "MAINNET_KEY_HERE",
+]
