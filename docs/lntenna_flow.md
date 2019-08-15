@@ -2,15 +2,15 @@
 
 ## Nodes
 
-* MESH1
-* GATEWAY
+* MESH1 (1x GoTenna Mesh, no WAN connection)
+* GATEWAY (1x GoTenna Mesh, with WAN connection)
 
 
 ## Flow
 
 #### MESH1 ---> GATEWAY
 
-Broadcast (or private msg) to GATEWAY of form "sat_req" which includes:
+Broadcast (or private) message to GATEWAY of form "sat_req" which includes:
 
 1) a message (? Bytes)
 2) a bitcoin refund address (34 Bytes)
@@ -60,13 +60,41 @@ Either way is fine with us
 
 #### MESH1 ---> Bitcoin P2P network via txtenna Meshnet
 
-After verification, a txtenna payment can be made, fulfilling the SSS request.
+After verification, a bitcoin tx is constructed and the raw hex transaction (hex_tx) 
+transmitted back to GATEWAY.
+
+MESH1
+
+```python
+tx_id = bitcoin.rpc_proxy.sendtoaddress(address, amount)
+tx_hex = bitcoin.rpc_proxy.gettransaction(tx_id)["hex"]
+MESH1.send_private(GATEWAY_GID, {"uuid": uuid, "tx_hex": tx_hex})
+```
+
+GATEWAY:
+
+```python
+if running bitcoind:
+    `bitcoin.rpc_proxy.sendrawtransaction(hex_tx)`
+else:
+    `swap.broadcast_tx(rawtransaction)`
+```
 
 #### GATEWAY ---> monitoring ---> MESH1
 
-When GATEWAY detects 'payment_preimage' in swap_status, return preimage to MESH1 via
-priavte message
+```python
+# When GATEWAY detects 'payment_preimage' in swap_status return preimage to MESH1 via 
+# private message
+while True:
+    swap_status = check_swap_status()
+    if 'payment_preimage' in swap_status:
+        GATEWAY.send_private(MESH1_GID, swap_status["payment_preimage"])
+        break
+    time.sleep(20)
+   
+    
+```
 
 
-COMPLETE.
+Done.
 
