@@ -19,6 +19,9 @@ sqlalchemy = "*"
 python-bitcoinlib = "*"
 simplejson = "*"
 pyzmq = "*"
+base58 = "*"
+secp256k1 = "*"
+bitstring = "*"
 
 [requires]
 python_version = "3.6"
