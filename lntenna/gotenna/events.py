@@ -1,10 +1,11 @@
 import queue
 from lntenna.gotenna.utilities import handle_event, handle_text_msg
+from lntenna.gotenna.utilities import de_segment
 
 
 class Events:
     def __init__(self):
-        self.msg = queue.LifoQueue()
+        self.msg = queue.Queue()
         self.msg._name = "msg_events"
         self.device_present = queue.LifoQueue()
         self.device_present._name = "device_present_events"
@@ -35,14 +36,45 @@ class Events:
         return result
 
     def get_all_messages(self):
+        msgs = []
+        while not self.msg.empty():
+            msgs.append(self.msg.get())
+        return msgs
+
+    def filter_messages(self, msgs, jumbo=False):
+        returned_msgs = []
+        for msg in msgs:
+            if not jumbo:
+                if not msg.message.payload.message.startswith("sm/"):
+                    returned_msgs.append(msg)
+                else:
+                    self.msg.put(msg)
+            if jumbo:
+                if msg.message.payload.message.startswith("sm/"):
+                    returned_msgs.append(msg)
+                else:
+                    self.msg.put(msg)
+        return returned_msgs
+
+    def get_text_messages(self, jumbo=False):
         """Returns a dict, where the first entry contains a list of messages received
         from newest to oldest"""
         msgs = []
         result = {self.msg._name: msgs}
-        while not self.msg.empty():
-            msgs.append(handle_text_msg(self.msg.get()))
+
+        m = self.get_all_messages()
+        m2 = self.filter_messages(m)
+        for msg in m2:
+            msgs.append(handle_text_msg(msg))
         result[self.msg._name] = msgs
         return result
+
+    def get_jumbo_message(self):
+        m = self.get_all_messages()
+        m2 = self.filter_messages(m, jumbo=True)
+        message_list = [msg.message.payload.message for msg in m2]
+        message_list.sort()
+        return de_segment(message_list)
 
     def get_all_callback(self):
         """Returns a dict, where the first entry contains a list of callback messages
@@ -56,3 +88,5 @@ class Events:
 
     def clear_all_messages(self):
         self.__init__()
+
+

@@ -3,7 +3,7 @@ from lntenna.txtenna.txtenna import (
     confirm_bitcoin_tx_local,
     create_output_data_struct,
     receive_message_from_gateway,
-    # handle_non_txtenna_msg,
+    handle_txtenna_message,
     # handle_message,
     mesh_broadcast_rawtx,
     rpc_getbalance,

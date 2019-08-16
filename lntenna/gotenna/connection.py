@@ -11,7 +11,7 @@ from lntenna.gotenna.events import Events
 from lntenna.bitcoin.rpc import BitcoinProxy
 from lntenna.api.message_codes import MSG_CODES
 from lntenna.swap.auto_swap import auto_swap
-from lntenna.gotenna.utilities import prepare_api_request, segment, de_segment
+from lntenna.gotenna.utilities import prepare_api_request, segment
 
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
@@ -406,7 +406,7 @@ class Connection:
 
         try:
             payload = json.loads(str(message.payload.message))
-            logger.debug(f"Recieved message: {payload}")
+            logger.debug(f"Received message: {payload}")
             for k, v in payload.items():
                 logger.debug(f"msg_key: {k}, msg_value: {v}")
                 if k in MSG_CODES:
@@ -424,7 +424,7 @@ class Connection:
                 prepped = prepare_api_request(v)
                 with requests.Session() as s:
                     return s.send(prepped, timeout=30)
-            if k == 'sat_req':
+            if k == "sat_req":
                 # do an automatic blocksat and swap setup
                 data = auto_swap(v)
                 # TODO: now we need to return this to sender using `send_private` and
