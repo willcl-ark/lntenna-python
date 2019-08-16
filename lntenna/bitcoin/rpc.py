@@ -25,3 +25,7 @@ class BitcoinProxy:
     @property
     def raw_proxy(self):
         return bitcoin.rpc.RawProxy(btc_conf_file=self.btc_conf_file)
+
+    @property
+    def proxy(self):
+        return bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
