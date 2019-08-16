@@ -15,7 +15,7 @@ def create_order(message: str, bid: str, network: str):
     else:
         return {"response": "Invalid network"}
     print(satellite_url)
-    uuid = str(uuid4())
+    uuid = str(uuid4())[:8]
     db.add_order(uuid=uuid, message=message, network=network)
     result = blocksat.place(message=message, bid=bid, satellite_url=satellite_url)
     if result.status_code == 200:
