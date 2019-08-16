@@ -53,3 +53,6 @@ class Events:
             msgs.append((self.callback.get()))
         result[self.callback._name] = msgs
         return result
+
+    def clear_all_messages(self):
+        self.__init__()

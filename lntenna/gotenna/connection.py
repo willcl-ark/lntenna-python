@@ -319,6 +319,22 @@ class Connection:
             gid.gid_val, message
         )
 
+    def send_jumbo(self, message, segment_size=210, private=False, gid=None):
+        msg_segments = segment(message, segment_size)
+        if not private:
+            for msg in msg_segments:
+                self.send_broadcast(msg)
+            return
+        return
+        # disabled for now as requires custom message parsing
+        # TODO: enable private messages here
+        # if not gid:
+        #     print("Missing GID")
+        #     return
+        # gid = goTenna.settings.GID(gid, 0)
+        # for msg in msg_segments:
+        #     self.send_private(gid, msg)
+
     def get_device_type(self):
         return self.api_thread.device_type
 
@@ -376,6 +392,44 @@ class Connection:
         if not self.api_thread.connected:
             return "Device must be connected"
         return self.api_thread.system_info
+
+    def handle_message(self, message):
+        """ handle a txtenna message received over the mesh network
+
+        Usage: handle_message message
+        """
+        result = {}
+        # see if this is a message to be handled as a gateway
+
+        # TODO: DEBUG
+        import traceback
+
+        try:
+            payload = json.loads(str(message.payload.message))
+            logger.debug(f"Recieved message: {payload}")
+            for k, v in payload.items():
+                logger.debug(f"msg_key: {k}, msg_value: {v}")
+                if k in MSG_CODES:
+                    # pass the full request dict through to parse message type later
+                    return self.handle_non_txtenna_msg(payload)
+            return self.handle_txtenna_message(payload)
+        except Exception:
+            traceback.print_exc()
+
+    def handle_non_txtenna_msg(self, message):
+        for k, v in message.items():
+            logger.debug(f"msg_key: {k}, msg_value: {v}")
+            if k == "api_request":
+                # pass the request dict only through
+                prepped = prepare_api_request(v)
+                with requests.Session() as s:
+                    return s.send(prepped, timeout=30)
+            if k == 'sat_req':
+                # do an automatic blocksat and swap setup
+                data = auto_swap(v)
+                # TODO: now we need to return this to sender using `send_private` and
+                #  segments...
+                self.send_jumbo(data)
 
     ###########
     # txtenna #
