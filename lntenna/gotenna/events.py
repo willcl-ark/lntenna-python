@@ -19,6 +19,8 @@ class Events:
         self.group_create._name = "group_create_events"
         self.callback = queue.LifoQueue()
         self.callback._name = "callback_events"
+        self.jumbo = []
+        self.jumbo_len = 0
 
     def get_all_connection(self):
         """Get all connect, disconnect and device present messages

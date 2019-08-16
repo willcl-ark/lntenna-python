@@ -1,8 +1,10 @@
 import traceback
 import logging
 import requests
+import threading
 from time import sleep
 import simplejson as json
+import types
 
 import goTenna
 
@@ -11,7 +13,7 @@ from lntenna.gotenna.events import Events
 from lntenna.bitcoin.rpc import BitcoinProxy
 from lntenna.api.message_codes import MSG_CODES
 from lntenna.swap.auto_swap import auto_swap
-from lntenna.gotenna.utilities import prepare_api_request, segment
+from lntenna.gotenna.utilities import prepare_api_request, segment, de_segment
 
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
@@ -52,6 +54,7 @@ class Connection:
         self.events = Events()
         self.btc = BitcoinProxy()
         self.gateway = 0
+        self.jumbo_thread = None
 
     def reset_connection(self):
         if self.api_thread:
@@ -101,7 +104,11 @@ class Connection:
                 self.events.msg.put(evt)
                 # TODO: check this affects txtenna only
                 if self.gateway == 1:
-                    self.handle_message(evt.message)
+                    thread = threading.Thread(
+                            target=self.handle_message, args=[evt.message]
+                    )
+                    thread.start()
+                    # self.handle_message(evt.message)
             except Exception:
                 traceback.print_exc()
         elif evt.event_type == goTenna.driver.Event.DEVICE_PRESENT:
@@ -323,6 +330,7 @@ class Connection:
         msg_segments = segment(message, segment_size)
         if not private:
             for msg in msg_segments:
+                sleep(2)
                 self.send_broadcast(msg)
             return
         return
@@ -404,6 +412,19 @@ class Connection:
         # TODO: DEBUG
         import traceback
 
+        if str(message.payload.message).startswith("sm/"):
+            # TODO: this cuts out all sender and receiver info -- ADD SENDER GID
+            self.events.jumbo.append(message.payload.message)
+            a, b, c, m = message.payload.message.split("/")
+            self.events.jumbo_len = c
+            # if the monitor thread is not running, start it
+            if self.jumbo_thread is None or not self.jumbo_thread.is_alive():
+                self.jumbo_thread = threading.Thread(
+                    target=self.monitor_jumbo_msgs(), daemon=True
+                )
+                logger.info("starting jumbo thread")
+                self.jumbo_thread.start()
+
         try:
             payload = json.loads(str(message.payload.message))
             logger.debug(f"Received message: {payload}")
@@ -427,9 +448,31 @@ class Connection:
             if k == "sat_req":
                 # do an automatic blocksat and swap setup
                 data = auto_swap(v)
-                # TODO: now we need to return this to sender using `send_private` and
-                #  segments...
                 self.send_jumbo(data)
+            if k == "sat_fill":
+                print(f"sat_fill received!!!: {v}")
+                # TODO: action on SAT_FILL RECEIVED!!!
+
+    def monitor_jumbo_msgs(self):
+        logger.info("starting moitoring jumbo messages")
+        while True:
+            logger.info(
+                    f"len.events.jumbo: {len(self.events.jumbo)} -- \
+                    events.jumbo_len: {self.events.jumbo_len}"
+            )
+            if len(self.events.jumbo) == int(self.events.jumbo_len):
+                logger.info("entered if clause")
+                # reconstruct the jumbo message
+                jumbo_message = types.SimpleNamespace()
+                jumbo_message.payload = types.SimpleNamespace()
+                # give handle_message the attributes is expects
+                jumbo_message.payload.message = json.dumps(de_segment(self.events.jumbo))
+                # send it back through handle_message
+                logger.info(f"jumbo_message_payload = {jumbo_message.payload.message}")
+                self.handle_message(jumbo_message)
+                break
+            sleep(5)
+        return
 
     ###########
     # txtenna #

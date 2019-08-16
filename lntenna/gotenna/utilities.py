@@ -102,7 +102,7 @@ def segment(msg, segment_size):
         chunks = (chunk_len // segment_size) + 1
     msg_list = []
     for i in range(0, chunk_len, segment_size):
-        msg_list.append(f"{header}/{i // segment_size}/{chunks}/" + msg[i: i + segment_size])
+        msg_list.append(f"{header}/{(i // segment_size) + 1}/{chunks}/" + msg[i: i + segment_size])
     return msg_list
 
 

@@ -38,11 +38,15 @@ def auto_swap(request):
     )
 
     result = {
-        "uuid": blocksat_order["uuid"],
-        "inv": blocksat_order["response"]["lightning_invoice"]["payreq"],
-        "amt": swap["response"]["swap_amount"],
-        "addr": swap["response"]["swap_p2sh_address"],
-        "r_s": swap["response"]["redeem_script"],
+        {
+            "sat_fill": {
+                "uuid": blocksat_order["uuid"],
+                "inv": blocksat_order["response"]["lightning_invoice"]["payreq"],
+                "amt": swap["response"]["swap_amount"],
+                "addr": swap["response"]["swap_p2sh_address"],
+                "r_s": swap["response"]["redeem_script"],
+            }
+        }
     }
 
     return result
