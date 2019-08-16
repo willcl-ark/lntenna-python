@@ -1,11 +1,21 @@
 import traceback
+import logging
+import requests
 from time import sleep
+import simplejson as json
 
 import goTenna
 
 import lntenna.txtenna as txtenna
 from lntenna.gotenna.events import Events
 from lntenna.bitcoin.rpc import BitcoinProxy
+from lntenna.api.message_codes import MSG_CODES
+from lntenna.swap.auto_swap import auto_swap
+from lntenna.gotenna.utilities import prepare_api_request, segment, de_segment
+
+logger = logging.getLogger(__name__)
+FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
+logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
@@ -384,8 +394,8 @@ class Connection:
     def receive_message_from_gateway(self, filename):
         return txtenna.receive_message_from_gateway(self, filename)
 
-    def handle_message(self, message):
-        return txtenna.handle_message(self, message)
+    def handle_txtenna_message(self, message):
+        return txtenna.handle_txtenna_message(self, message)
 
     def mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network):
         return txtenna.mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network)

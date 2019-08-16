@@ -4,7 +4,6 @@ import traceback
 import zlib
 from io import BytesIO
 
-import simplejson as json
 from threading import Thread
 from time import sleep
 
@@ -12,8 +11,6 @@ import requests
 from bitcoin.core import CMutableTransaction, CMutableTxOut, b2lx, b2x, x
 from bitcoin.wallet import CBitcoinAddress
 
-from lntenna.api.message_codes import MSG_CODES
-from lntenna.gotenna.utilities import prepare_api_request
 from lntenna.txtenna.txtenna_segment import TxTennaSegment
 
 
@@ -186,34 +183,25 @@ def receive_message_from_gateway(conn, filename):
     return result
 
 
-def handle_non_txtenna_msg(message):
-    for k, v in message.iteritems():
-        if k == "api_request":
-            # pass the request dict only through
-            prepped = prepare_api_request(v)
-            with requests.Session() as s:
-                return s.send(prepped, timeout=30)
-
-
-def handle_message(conn, message):
+def handle_txtenna_message(conn, message):
     """ handle a txtenna message received over the mesh network
 
     Usage: handle_message message
     """
     result = {}
-    # see if this is a message to be handled as a gateway
-
-    # TODO: DEBUG
-    import traceback
-
-    try:
-        payload = json.loads(str(message.payload.message))
-        for key in payload.iterkeys():
-            if key in MSG_CODES:
-                # pass the full request dict through
-                return handle_non_txtenna_msg(payload)
-    except Exception:
-        traceback.print_exc()
+    # # see if this is a message to be handled as a gateway
+    #
+    # # TODO: DEBUG
+    # import traceback
+    #
+    # try:
+    #     payload = json.loads(str(message.payload.message))
+    #     for k, v in payload:
+    #         if k in MSG_CODES:
+    #             # pass the full request dict through to parse message type later
+    #             return handle_non_txtenna_msg(payload)
+    # except Exception:
+    #     traceback.print_exc()
 
     # handle the message as if it's a txtenna message
     payload = str(message.payload.message)

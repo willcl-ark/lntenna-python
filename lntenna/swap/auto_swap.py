@@ -2,8 +2,10 @@ from lntenna.swap import create_order, get_invoice_details, get_swap_quote
 
 
 def auto_swap(request):
-    """Takes a dict as argument of the following structure, with arguments 'm' for
-    message, 'a' for refund address and 'n' for network:
+    """Takes a dict as argument of the following structure, with arguments
+    "m" - message,
+    "a" - refund address
+    "n" - network:
 
     {"sat_req":
         {"m": "Hello, World!",
