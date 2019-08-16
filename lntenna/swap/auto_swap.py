@@ -1,50 +1,46 @@
-import logging
-
-from lntenna.swap import (
-    bump_blocksat_order,
-    check_swap,
-    create_order,
-    get_address_details,
-    get_invoice_details,
-    get_refund_address,
-    get_swap_quote,
-    pay_swap,
-    swap_rates,
-)
-
-logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+from lntenna.swap import create_order, get_invoice_details, get_swap_quote
 
 
-def auto_swap(message):
+def auto_swap(request):
+    """Takes a dict as argument of the following structure, with arguments 'm' for
+    message, 'a' for refund address and 'n' for network:
+
+    {"sat_req":
+        {"m": "Hello, World!",
+         "a": "mut6HiwhKab6csGyUBbacoHDq7BvENVti8",
+         "n": "t"
+         }
+    }
+
+    """
+    # parse request
+    message = request["m"]
+    refund_addr = request["a"]
+    network = "testnet" if request["n"] is "t" else "mainnet"
+
     # create blocksat order
-    blocksat_order = create_order(message=message, bid="10000", network="testnet")
-    logger.debug(f"blocksat_order: {blocksat_order}")
+    blocksat_order = create_order(message=message, bid="10000", network=network)
 
     # lookup the invoice with the swap server to ensure it's valid & payable
     invoice_lookup = get_invoice_details(
-        invoice=blocksat_order["order"]["lightning_invoice"]["payreq"],
+        invoice=blocksat_order["response"]["lightning_invoice"]["payreq"],
         network="testnet",
     )
-    logger.debug(f"invoice_lookup: {invoice_lookup}")
-
-    # get a bitcoin refund address
-    refund_addr = get_refund_address(uuid=blocksat_order["uuid"], addr_type="legacy")
-    logger.debug(f"refund_addr: {refund_addr}")
 
     # get a swap quote from the swap server
     swap = get_swap_quote(
         uuid=blocksat_order["uuid"],
-        invoice=blocksat_order["order"]["lightning_invoice"]["payreq"],
-        network="testnet",
+        invoice=blocksat_order["response"]["lightning_invoice"]["payreq"],
+        network=network,
+        refund_addr=refund_addr,
     )
-    logger.debug(f"swap: {swap}")
 
-    # pay the swap quote
-    swap_payment = pay_swap(uuid=blocksat_order["uuid"])
-    logger.debug(f"pay_swap: {swap_payment}")
+    result = {
+        "uuid": blocksat_order["uuid"],
+        "inv": blocksat_order["response"]["lightning_invoice"]["payreq"],
+        "amt": swap["response"]["swap_amount"],
+        "addr": swap["response"]["swap_p2sh_address"],
+        "r_s": swap["response"]["redeem_script"],
+    }
 
-    # check the swap status
-    check_swap_status = check_swap(uuid=blocksat_order["uuid"])
-    logger.debug(f"swap_status: {check_swap_status}")
+    return result
