@@ -1,26 +1,27 @@
-import traceback
 import logging
-import requests
 import threading
-from time import sleep, time
-import simplejson as json
+import traceback
 import types
+from time import sleep, time
 
 import goTenna
+import requests
+import simplejson as json
 
 import lntenna.txtenna as txtenna
-from lntenna.gotenna.events import Events
-from lntenna.bitcoin.rpc import BitcoinProxy
 from lntenna.api.message_codes import MSG_CODES
-from lntenna.swap.auto_swap_create import auto_swap
+from lntenna.bitcoin.rpc import BitcoinProxy
+from lntenna.gotenna.events import Events
+from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment
 from lntenna.swap.auto_swap_complete import auto_swap_complete
+from lntenna.swap.auto_swap_create import auto_swap
 from lntenna.swap.auto_swap_verify import auto_swap_verify
-from lntenna.gotenna.utilities import prepare_api_request, segment, de_segment
+from lntenna.server.config import FORMAT
 
 logger = logging.getLogger(__name__)
-FORMAT = "[%(levelname)s - %(funcname)s] - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 logging.getLogger("goTenna").setLevel(logging.CRITICAL)
+logging.getLogger("urllib3").setLevel(logging.INFO)
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
@@ -57,16 +58,11 @@ class Connection:
         self.events = Events()
         self.btc = BitcoinProxy()
         self.gateway = 0
-        # self.jumbo_thread = None
-        # self.jumbo_thread = threading.Thread(
-        #     target=self.monitor_jumbo_msgs, daemon=True
-        # )
+        self.jumbo_thread = threading.Thread()
 
-    @property
-    def jumbo_thread(self):
-        return threading.Thread(
-                target=self.monitor_jumbo_msgs, daemon=True
-        )
+    # @property
+    # def jumbo_thread(self):
+    #     return threading.Thread(target=self.monitor_jumbo_msgs, daemon=True)
 
     def reset_connection(self):
         if self.api_thread:
@@ -340,11 +336,14 @@ class Connection:
 
     def send_jumbo(self, message, segment_size=210, private=False, gid=None):
         msg_segments = segment(message, segment_size)
+        logger.debug(f"Created segmented message with {len(msg_segments)} segments")
         if not private:
+            i = 0
             for msg in msg_segments:
+                i += 1
                 sleep(2)
                 self.send_broadcast(msg)
-            return
+                logger.debug(f"Sent message segment {i} of {len(msg_segments)}")
         return
         # disabled for now as requires custom message parsing
         # TODO: enable private messages here
@@ -414,74 +413,79 @@ class Connection:
         return self.api_thread.system_info
 
     def handle_message(self, message):
-        """ handle a txtenna message received over the mesh network
-
-        Usage: handle_message message
+        """
+        Handle messages received over the mesh network
+        :param message: as strings
+        :return: result of message handling
         """
 
         payload = message.payload.message
-        logger.debug(
-            f"Handle message received message {payload} of type {type(payload)}"
-        )
         # handle a jumbo message
         try:
             if payload.startswith("sm/"):
                 # TODO: this cuts out all sender and receiver info -- ADD SENDER GID
+                logger.debug(f"Received jumbo message fragment")
+                prefix, seq, length, msg = payload.split("/")
                 if self.jumbo_thread.is_alive():
                     pass
                 else:
+                    self.events.jumbo_len = length
+                    self.jumbo_thread = None
+                    self.jumbo_thread = threading.Thread(target=self.monitor_jumbo_msgs, daemon=True)
                     self.jumbo_thread.start()
                 self.events.jumbo.append(payload)
-                a, b, c, m = payload.split("/")
-                self.events.jumbo_len = c
                 return
-        except Exception as e:
-            logger.debug("handle_message() did not detect a jumbo message")
-            logger.debug(e)
+        except Exception:
+            pass
 
         # handle a known message type defined in MSG_CODES
         try:
             payload = json.loads(payload)
-            logger.debug(
-                f"handle_message() loaded a json-formatted message:\n{payload} which is now type: {type(payload)}"
-            )
             if isinstance(payload, str):
                 json.loads(payload)
             for k, v in payload.items():
                 if k in MSG_CODES:
+                    logger.debug(f"Handling a {k} message")
                     # pass the full request dict through to parse message type later
                     return self.handle_non_txtenna_msg(payload)
+                else:
+                    logger.debug(
+                            f"Received message but could not automatically handle:\n{payload}"
+                    )
             # return self.handle_txtenna_message(payload)
         except Exception as e:
-            logger.debug(e)
+            logger.debug(f"Raised exception:\n{e}")
 
     def handle_non_txtenna_msg(self, message):
         for k, v in message.items():
             if k == "api_request":
+                logger.debug("Processing a api_request message")
                 # pass the request dict only through
                 prepped = prepare_api_request(v)
+                logger.debug("Prepared an api request")
                 with requests.Session() as s:
                     return s.send(prepped, timeout=30)
             if k == "sat_req":
                 # do an automatic blocksat and swap setup
+                logger.debug("Processing a sat_req message")
                 data = json.dumps(auto_swap(v))
-                logger.debug(data)
                 self.send_jumbo(data)
             if k == "sat_fill":
-                print(f"sat_fill received!!!: {v}")
-                swap_paid = auto_swap_verify(v, self.btc.raw_proxy)
-                self.send_jumbo(json.dumps(swap_paid))
+                logger.debug("Processing a sat_fill message")
+                swap_paid = json.dumps(auto_swap_verify(v))
+                self.send_jumbo(swap_paid)
             if k == "swap_tx":
                 logger.debug("Processing a swap_tx message")
-                swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"], self)
+                swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"])
                 self.send_broadcast(json.dumps(swap_complete))
 
-    def monitor_jumbo_msgs(self, timeout=60):
-        logger.debug("starting monitoring jumbo messages")
+    def monitor_jumbo_msgs(self, timeout=30):
+        logger.debug("Starting jumbo message monitor thread")
         start = time()
         while True and time() < start + timeout:
             logger.debug(
-                f"received: {len(self.events.jumbo)} of {self.events.jumbo_len} jumbo messages"
+                f"received: {len(self.events.jumbo)} of {self.events.jumbo_len} "
+                f"jumbo messages"
             )
             if (
                 len(self.events.jumbo) == int(self.events.jumbo_len)
@@ -491,11 +495,9 @@ class Connection:
                 jumbo_message = types.SimpleNamespace()
                 jumbo_message.payload = types.SimpleNamespace()
                 # reconstruct the jumbo message
-                jumbo_message.payload.message = json.loads(
-                    de_segment(self.events.jumbo)
-                )
+                jumbo_message.payload.message = de_segment(self.events.jumbo)
                 # send it back through handle_message
-                logger.debug(f"jumbo_message_payload = {jumbo_message.payload.message}")
+                logger.debug(f"Jumbo message payload reconstituted")
                 self.handle_message(jumbo_message)
                 break
             sleep(5)
