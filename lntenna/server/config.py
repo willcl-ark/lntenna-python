@@ -1,26 +1,7 @@
 # General
 connection = None
 
-# # Bitcoin Testnet
-# TESTNET = {
-#     "NETWORK": "testnet",
-#     "RPC_HOST": "127.0.0.1",
-#     "RPC_PORT": "18332",
-#     "RPC_USER": "user",
-#     "RPC_PASSWORD": "password",
-# }
-#
-# # Bitcoin Mainnet
-# MAINNET = {
-#     "NETWORK": "mainnet",
-#     "RPC_HOST": "127.0.0.1",
-#     "RPC_PORT": "8332",
-#     "RPC_USER": "will",
-#     "RPC_PASSWORD": "grad-pacifier-brae-resurge-crossbow",
-# }
-
 # Bitcoin
-SATOSHIS = 100_000_000
 BTC_CONF_PATH = "/Users/will/Library/Application Support/Bitcoin/testnet3/bitcoin.conf"
 
 # Database
@@ -35,5 +16,8 @@ SATELLITE_API = "https://api.blockstream.space"
 TESTNET_SATELLITE_API = "https://api.blockstream.space/testnet"
 BLOCKSAT_NODE_PUBKEYS = [
     "039d2201586141a3fff708067aa270aa4f6a724227d5740254d4e34da262a79c2a",
-    "MAINNET_KEY_HERE",
+    "03f21fc2e8ab0540eeb74dd715b5b66638ec1cd392db00009b320b3ed8c409bd57",
 ]
+
+# logging
+FORMAT = "[%(levelname)s - %(funcname)s] - %(message)s"
