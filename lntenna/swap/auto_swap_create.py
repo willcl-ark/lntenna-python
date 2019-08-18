@@ -1,9 +1,10 @@
 import logging
+from pprint import pformat
 
+from lntenna.server.config import FORMAT
 from lntenna.swap import create_order, get_invoice_details, get_swap_quote
 
 logger = logging.getLogger(__name__)
-FORMAT = "[%(levelname)s - %(funcname)s] - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 
@@ -27,12 +28,16 @@ def auto_swap(request):
     network = "testnet" if request["n"] is "t" else "mainnet"
 
     # create blocksat order
+    # TODO: Add some bid creation logic here or somewhere else...
     blocksat_order = create_order(message=message, bid="10000", network=network)
 
     # lookup the invoice with the swap server to ensure it's valid & payable
-    invoice_lookup = get_invoice_details(
-        invoice=blocksat_order["response"]["lightning_invoice"]["payreq"],
-        network="testnet",
+    assert (
+        get_invoice_details(
+            invoice=blocksat_order["response"]["lightning_invoice"]["payreq"],
+            network="testnet",
+        )
+        is not None
     )
 
     # get a swap quote from the swap server
@@ -53,6 +58,6 @@ def auto_swap(request):
         }
     }
 
-    logger.debug(f"Result: {result}")
+    logger.debug(f"Auto_swap result: {pformat(result)}")
 
     return result
