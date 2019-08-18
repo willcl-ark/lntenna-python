@@ -1,8 +1,15 @@
 import ast
+import logging
 import time
+
 import requests
-import lntenna.server.config
 import simplejson as json
+
+import lntenna.server.config
+from lntenna.server.config import FORMAT
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 MSG_TYPE = {2: "BROADCAST", 3: "EMERGENCY", 1: "GROUP", 0: "PRIVATE"}
 
@@ -91,17 +98,26 @@ def prepare_api_request(request):
     return prepped
 
 
-def segment(msg, segment_size):
+def segment(msg, segment_size: int):
+    """
+    :param msg: string or json-compatible object
+    :param segment_size: integer
+    :return: list of strings ready for sequential transmission
+    """
+
     try:
-        msg = json.dumps(msg)
+        if not isinstance(msg, str):
+            msg = json.dumps(msg)
     except Exception as e:
-        raise e
+        logger.debug(e)
+        return
     prefix = "sm"
     msg_length = len(msg)
     if msg_length % segment_size == 0:
-        num_segments = msg_length / segment_size
+        num_segments = int(msg_length / segment_size)
     else:
-        num_segments = (msg_length // segment_size) + 1
+        num_segments = int((msg_length // segment_size) + 1)
+
     msg_list = []
     for i in range(0, msg_length, segment_size):
         header = f"{prefix}/{(i // segment_size) + 1}/{num_segments}/"
@@ -110,16 +126,19 @@ def segment(msg, segment_size):
 
 
 def de_segment(segment_list: list):
+    """
+    :param segment_list: a list of prefixed strings
+    :return: prefix-removed, concatenated string
+    """
     # remove erroneous segments
     for i in segment_list:
         if not i.startswith("sm/"):
             del segment_list[i]
     segment_list.sort()
 
-    # remove the header and append message
+    # remove the header and compile result
     result = ""
     for i in segment_list:
         a, b, c, msg = i.split("/")
         result += msg
-
     return result
