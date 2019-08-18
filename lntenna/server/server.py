@@ -23,9 +23,9 @@ import lntenna.server.config as config
 from lntenna.api import *
 from lntenna.database import db
 from lntenna.gotenna.connection import Connection
+from lntenna.server.config import FORMAT
 
 logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 app = Flask(__name__)
@@ -33,7 +33,6 @@ app.config["DEBUG"] = True
 api = Api(app)
 auth = HTTPBasicAuth()
 config.connection = Connection()
-
 
 api.add_resource(ApiRequest, "/gotenna/api/v1.0/api_request")
 api.add_resource(CanConnect, "/gotenna/api/v1.0/can_connect")
