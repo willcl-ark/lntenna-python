@@ -5,7 +5,7 @@ import simplejson as json
 from flask_restful import Resource, reqparse
 import lntenna.server.config as config
 from lntenna.gotenna.utilities import check_connection
-from lntenna.swap.auto_swap import auto_swap
+from lntenna.swap.auto_swap_create import auto_swap
 
 
 class AutoSatSwap(Resource):

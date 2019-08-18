@@ -7,7 +7,7 @@ from lntenna.server.config import BTC_CONF_PATH
 class BitcoinProxy:
     def __init__(self):
         self.btc_conf_file = BTC_CONF_PATH
-        self._btc_network = "mainnet"
+        self._btc_network = "testnet"
         bitcoin.SelectParams(self._btc_network)
 
     @property

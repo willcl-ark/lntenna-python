@@ -2,7 +2,7 @@ import traceback
 import logging
 import requests
 import threading
-from time import sleep
+from time import sleep, time
 import simplejson as json
 import types
 
@@ -12,12 +12,15 @@ import lntenna.txtenna as txtenna
 from lntenna.gotenna.events import Events
 from lntenna.bitcoin.rpc import BitcoinProxy
 from lntenna.api.message_codes import MSG_CODES
-from lntenna.swap.auto_swap import auto_swap
+from lntenna.swap.auto_swap_create import auto_swap
+from lntenna.swap.auto_swap_complete import auto_swap_complete
+from lntenna.swap.auto_swap_verify import auto_swap_verify
 from lntenna.gotenna.utilities import prepare_api_request, segment, de_segment
 
 logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
+FORMAT = "[%(levelname)s - %(funcname)s] - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.getLogger("goTenna").setLevel(logging.CRITICAL)
 
 # For SPI connection only, set SPI_CONNECTION to true with proper SPI settings
 SPI_CONNECTION = False
@@ -54,7 +57,16 @@ class Connection:
         self.events = Events()
         self.btc = BitcoinProxy()
         self.gateway = 0
-        self.jumbo_thread = None
+        # self.jumbo_thread = None
+        # self.jumbo_thread = threading.Thread(
+        #     target=self.monitor_jumbo_msgs, daemon=True
+        # )
+
+    @property
+    def jumbo_thread(self):
+        return threading.Thread(
+                target=self.monitor_jumbo_msgs, daemon=True
+        )
 
     def reset_connection(self):
         if self.api_thread:
@@ -105,7 +117,7 @@ class Connection:
                 # TODO: check this affects txtenna only
                 if self.gateway == 1:
                     thread = threading.Thread(
-                            target=self.handle_message, args=[evt.message]
+                        target=self.handle_message, args=[evt.message]
                     )
                     thread.start()
                     # self.handle_message(evt.message)
@@ -406,40 +418,45 @@ class Connection:
 
         Usage: handle_message message
         """
-        result = {}
-        # see if this is a message to be handled as a gateway
 
-        # TODO: DEBUG
-        import traceback
-
-        if str(message.payload.message).startswith("sm/"):
-            # TODO: this cuts out all sender and receiver info -- ADD SENDER GID
-            self.events.jumbo.append(message.payload.message)
-            a, b, c, m = message.payload.message.split("/")
-            self.events.jumbo_len = c
-            # if the monitor thread is not running, start it
-            if self.jumbo_thread is None or not self.jumbo_thread.is_alive():
-                self.jumbo_thread = threading.Thread(
-                    target=self.monitor_jumbo_msgs(), daemon=True
-                )
-                logger.info("starting jumbo thread")
-                self.jumbo_thread.start()
-
+        payload = message.payload.message
+        logger.debug(
+            f"Handle message received message {payload} of type {type(payload)}"
+        )
+        # handle a jumbo message
         try:
-            payload = json.loads(str(message.payload.message))
-            logger.debug(f"Received message: {payload}")
+            if payload.startswith("sm/"):
+                # TODO: this cuts out all sender and receiver info -- ADD SENDER GID
+                if self.jumbo_thread.is_alive():
+                    pass
+                else:
+                    self.jumbo_thread.start()
+                self.events.jumbo.append(payload)
+                a, b, c, m = payload.split("/")
+                self.events.jumbo_len = c
+                return
+        except Exception as e:
+            logger.debug("handle_message() did not detect a jumbo message")
+            logger.debug(e)
+
+        # handle a known message type defined in MSG_CODES
+        try:
+            payload = json.loads(payload)
+            logger.debug(
+                f"handle_message() loaded a json-formatted message:\n{payload} which is now type: {type(payload)}"
+            )
+            if isinstance(payload, str):
+                json.loads(payload)
             for k, v in payload.items():
-                logger.debug(f"msg_key: {k}, msg_value: {v}")
                 if k in MSG_CODES:
                     # pass the full request dict through to parse message type later
                     return self.handle_non_txtenna_msg(payload)
-            return self.handle_txtenna_message(payload)
-        except Exception:
-            traceback.print_exc()
+            # return self.handle_txtenna_message(payload)
+        except Exception as e:
+            logger.debug(e)
 
     def handle_non_txtenna_msg(self, message):
         for k, v in message.items():
-            logger.debug(f"msg_key: {k}, msg_value: {v}")
             if k == "api_request":
                 # pass the request dict only through
                 prepped = prepare_api_request(v)
@@ -447,31 +464,43 @@ class Connection:
                     return s.send(prepped, timeout=30)
             if k == "sat_req":
                 # do an automatic blocksat and swap setup
-                data = auto_swap(v)
+                data = json.dumps(auto_swap(v))
+                logger.debug(data)
                 self.send_jumbo(data)
             if k == "sat_fill":
                 print(f"sat_fill received!!!: {v}")
-                # TODO: action on SAT_FILL RECEIVED!!!
+                swap_paid = auto_swap_verify(v, self.btc.raw_proxy)
+                self.send_jumbo(json.dumps(swap_paid))
+            if k == "swap_tx":
+                logger.debug("Processing a swap_tx message")
+                swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"], self)
+                self.send_broadcast(json.dumps(swap_complete))
 
-    def monitor_jumbo_msgs(self):
-        logger.info("starting moitoring jumbo messages")
-        while True:
-            logger.info(
-                    f"len.events.jumbo: {len(self.events.jumbo)} -- \
-                    events.jumbo_len: {self.events.jumbo_len}"
+    def monitor_jumbo_msgs(self, timeout=60):
+        logger.debug("starting monitoring jumbo messages")
+        start = time()
+        while True and time() < start + timeout:
+            logger.debug(
+                f"received: {len(self.events.jumbo)} of {self.events.jumbo_len} jumbo messages"
             )
-            if len(self.events.jumbo) == int(self.events.jumbo_len):
-                logger.info("entered if clause")
-                # reconstruct the jumbo message
+            if (
+                len(self.events.jumbo) == int(self.events.jumbo_len)
+                and len(self.events.jumbo) is not 0
+            ):
+                # give handle_message the attributes it expects
                 jumbo_message = types.SimpleNamespace()
                 jumbo_message.payload = types.SimpleNamespace()
-                # give handle_message the attributes is expects
-                jumbo_message.payload.message = json.dumps(de_segment(self.events.jumbo))
+                # reconstruct the jumbo message
+                jumbo_message.payload.message = json.loads(
+                    de_segment(self.events.jumbo)
+                )
                 # send it back through handle_message
-                logger.info(f"jumbo_message_payload = {jumbo_message.payload.message}")
+                logger.debug(f"jumbo_message_payload = {jumbo_message.payload.message}")
                 self.handle_message(jumbo_message)
                 break
             sleep(5)
+        # reset jumbo events after timeout
+        self.events.init_jumbo()
         return
 
     ###########

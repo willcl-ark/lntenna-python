@@ -4,7 +4,6 @@ import requests
 import lntenna.server.config
 import simplejson as json
 
-
 MSG_TYPE = {2: "BROADCAST", 3: "EMERGENCY", 1: "GROUP", 0: "PRIVATE"}
 
 
@@ -93,16 +92,20 @@ def prepare_api_request(request):
 
 
 def segment(msg, segment_size):
-    msg = json.dumps(msg)
-    header = "sm"
-    chunk_len = len(msg)
-    if chunk_len % segment_size == 0:
-        chunks = chunk_len / segment_size
+    try:
+        msg = json.dumps(msg)
+    except Exception as e:
+        raise e
+    prefix = "sm"
+    msg_length = len(msg)
+    if msg_length % segment_size == 0:
+        num_segments = msg_length / segment_size
     else:
-        chunks = (chunk_len // segment_size) + 1
+        num_segments = (msg_length // segment_size) + 1
     msg_list = []
-    for i in range(0, chunk_len, segment_size):
-        msg_list.append(f"{header}/{(i // segment_size) + 1}/{chunks}/" + msg[i: i + segment_size])
+    for i in range(0, msg_length, segment_size):
+        header = f"{prefix}/{(i // segment_size) + 1}/{num_segments}/"
+        msg_list.append(header + msg[i : i + segment_size])
     return msg_list
 
 
@@ -118,4 +121,5 @@ def de_segment(segment_list: list):
     for i in segment_list:
         a, b, c, msg = i.split("/")
         result += msg
-    return json.loads(result)
+
+    return result

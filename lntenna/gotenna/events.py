@@ -91,4 +91,8 @@ class Events:
     def clear_all_messages(self):
         self.__init__()
 
+    def init_jumbo(self):
+        self.jumbo = []
+        self.jumbo_len = 0
+
 

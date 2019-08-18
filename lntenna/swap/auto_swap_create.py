@@ -1,4 +1,10 @@
+import logging
+
 from lntenna.swap import create_order, get_invoice_details, get_swap_quote
+
+logger = logging.getLogger(__name__)
+FORMAT = "[%(levelname)s - %(funcname)s] - %(message)s"
+logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 
 def auto_swap(request):
@@ -38,15 +44,15 @@ def auto_swap(request):
     )
 
     result = {
-        {
-            "sat_fill": {
-                "uuid": blocksat_order["uuid"],
-                "inv": blocksat_order["response"]["lightning_invoice"]["payreq"],
-                "amt": swap["response"]["swap_amount"],
-                "addr": swap["response"]["swap_p2sh_address"],
-                "r_s": swap["response"]["redeem_script"],
-            }
+        "sat_fill": {
+            "uuid": blocksat_order["uuid"],
+            "inv": blocksat_order["response"]["lightning_invoice"]["payreq"],
+            "amt": swap["response"]["swap_amount"],
+            "addr": swap["response"]["swap_p2sh_address"],
+            "r_s": swap["response"]["redeem_script"],
         }
     }
+
+    logger.debug(f"Result: {result}")
 
     return result
