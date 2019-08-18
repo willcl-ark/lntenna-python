@@ -1,6 +1,6 @@
 import queue
-from lntenna.gotenna.utilities import handle_event, handle_text_msg
-from lntenna.gotenna.utilities import de_segment
+
+from lntenna.gotenna.utilities import de_segment, handle_event, handle_text_msg
 
 
 class Events:
@@ -94,5 +94,3 @@ class Events:
     def init_jumbo(self):
         self.jumbo = []
         self.jumbo_len = 0
-
-
