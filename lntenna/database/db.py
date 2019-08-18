@@ -171,6 +171,12 @@ def lookup_refund_addr(uuid):
     return conn.execute(s).fetchone().values()[0]
 
 
+def lookup_network(uuid):
+    conn = engine.connect()
+    s = select([orders.c.network]).where(orders.c.uuid == uuid)
+    return conn.execute(s).fetchone().values()[0]
+
+
 def lookup_pay_details(uuid):
     conn = engine.connect()
     s = select([swaps.c.swap_amount, swaps.c.swap_p2sh_address]).where(
