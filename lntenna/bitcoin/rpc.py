@@ -1,13 +1,17 @@
 import bitcoin
 import bitcoin.core
 import bitcoin.rpc
+
 from lntenna.server.config import BTC_CONF_PATH
+
+SATOSHIS = 100_000_000
+networks = ["mainnet", "testnet", "regtest"]
 
 
 class BitcoinProxy:
-    def __init__(self):
+    def __init__(self, network="testnet"):
         self.btc_conf_file = BTC_CONF_PATH
-        self._btc_network = "testnet"
+        self._btc_network = network
         bitcoin.SelectParams(self._btc_network)
 
     @property
@@ -19,6 +23,7 @@ class BitcoinProxy:
         """
         :param network: one of "mainnet", "testnet" or "regtest"
         """
+        assert network in networks
         self._btc_network = network
         bitcoin.SelectParams(self.network)
 
