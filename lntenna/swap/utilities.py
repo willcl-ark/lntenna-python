@@ -1,10 +1,11 @@
+import functools
 import logging
 import time
-import functools
 from secrets import token_hex
 
+from lntenna.server.config import FORMAT
+
 logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 
@@ -30,7 +31,7 @@ def try_json(func):
     def _try_json(*args, **kwargs):
         result = func(*args, **kwargs)
         if hasattr(result, "status_code"):
-            _result ={"status_code": result.status_code}
+            _result = {"status_code": result.status_code}
         if hasattr(result, "text"):
             try:
                 _result["response"] = result.json()
@@ -38,4 +39,5 @@ def try_json(func):
                 _result["response"] = result.text
             return _result
         return result
+
     return _try_json
