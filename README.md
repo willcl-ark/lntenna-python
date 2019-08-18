@@ -25,7 +25,7 @@ To send a message, prepare the request and broadcast it:
 ```python
 req = {"sat_req":
         {"m": "Hello, World, again!",
-         "a": "mut6HiwhKab6csGyUBbacoHDq7BvENVti8",
+         "a": "your_bitcoin_refund_address_here",
          "n": "t"
          }
     }
@@ -33,4 +33,10 @@ req = {"sat_req":
 c.send_broadcast(json.dumps(req))
 ```
 
-Logging in each console will display the progress of the activity.
+`m`: message, 
+
+`a`: refund address (in case swap is not fulfilled) and 
+
+`n`: network (accepts "t" for testnet or "m" for mainnet)
+
+Logging in each console will display the progress of the activity which is fully automatic until completion in this iteration.
