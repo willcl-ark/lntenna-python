@@ -12,7 +12,7 @@ In a terminal:
 
 * create a python 3.6 venv and activate it
 
-`pip install -r requirements.txt`
+* `pip install -r requirements.txt`
 
 Open a python console for each GoTenna device and connect to it:
 
@@ -21,9 +21,7 @@ import logging, simplejson as json
 logging.basicConfig(level=logging.DEBUG)
 from lntenna.gotenna import connection
 c = connection.Connection()
-c.sdk_token(
-    sdk_token='your_sdk_token'
-)
+c.sdk_token(sdk_token='your_sdk_token')
 c.set_gid(gid='your_GID')
 c.set_geo_region(region=2)
 c.gateway = 1
