@@ -1,4 +1,4 @@
-from lntenna.server.config import SATOSHIS
+from lntenna.bitcoin.rpc import SATOSHIS
 from lntenna.server.bitcoind_password import BITCOIND_PW
 from lntenna.database import db
 from lntenna.bitcoin.rpc import BitcoinProxy
