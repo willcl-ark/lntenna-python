@@ -1,18 +1,17 @@
 #!flask/bin/python
 
 import simplejson as json
-
 from flask_restful import Resource, reqparse
+
 import lntenna.server.config as config
 from lntenna.gotenna.utilities import check_connection
 from lntenna.swap.auto_swap_create import auto_swap
 
 
 class AutoSatSwap(Resource):
-
     def __init__(self):
-        self.help = """Takes a jsonified dict as argument of the following structure, 
-        with keys: "m" - message, "a" - refund address and "n" - network """
+        self.help = """Takes a json encoded dict as argument with keys: 
+        "m" - message, "a" - refund address and "n" - network """
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(
             "json_request", required=False, help=self.help, location="json"
