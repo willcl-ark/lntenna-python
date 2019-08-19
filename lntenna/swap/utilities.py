@@ -10,7 +10,9 @@ logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
 
 def create_random_message():
-    return str(token_hex(64))
+    msg = str(token_hex(64))
+    logger.debug(f"Created random message: {msg}")
+    return msg
 
 
 def clock(func):
@@ -27,6 +29,8 @@ def clock(func):
 
 
 def try_json(func):
+    """Try to return the .json() version of the response
+    """
     @functools.wraps(func)
     def _try_json(*args, **kwargs):
         result = func(*args, **kwargs)

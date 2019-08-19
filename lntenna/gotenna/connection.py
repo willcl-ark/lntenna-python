@@ -8,15 +8,13 @@ import goTenna
 import requests
 import simplejson as json
 
+import lntenna.bitcoin as btc
 import lntenna.txtenna as txtenna
 from lntenna.api.message_codes import MSG_CODES
-from lntenna.bitcoin.rpc import BitcoinProxy
 from lntenna.gotenna.events import Events
 from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment
-from lntenna.swap.auto_swap_complete import auto_swap_complete
-from lntenna.swap.auto_swap_create import auto_swap
-from lntenna.swap.auto_swap_verify import auto_swap_verify
 from lntenna.server.config import FORMAT
+from lntenna.swap import auto_swap, auto_swap_complete, auto_swap_verify
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
@@ -56,7 +54,7 @@ class Connection:
         self.gid = (None,)
         self.geo_region = None
         self.events = Events()
-        self.btc = BitcoinProxy()
+        self.btc = btc.BitcoinProxy()
         self.gateway = 0
         self.jumbo_thread = threading.Thread()
 
@@ -431,7 +429,9 @@ class Connection:
                 else:
                     self.events.jumbo_len = length
                     self.jumbo_thread = None
-                    self.jumbo_thread = threading.Thread(target=self.monitor_jumbo_msgs, daemon=True)
+                    self.jumbo_thread = threading.Thread(
+                        target=self.monitor_jumbo_msgs, daemon=True
+                    )
                     self.jumbo_thread.start()
                 self.events.jumbo.append(payload)
                 return
@@ -450,7 +450,7 @@ class Connection:
                     return self.handle_non_txtenna_msg(payload)
                 else:
                     logger.debug(
-                            f"Received message but could not automatically handle:\n{payload}"
+                        f"Received message but could not automatically handle:\n{payload}"
                     )
             # return self.handle_txtenna_message(payload)
         except Exception as e:

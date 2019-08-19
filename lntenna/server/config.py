@@ -9,8 +9,8 @@ BTC_NETWORK = "testnet"
 DB_DIR = "/.lntenna/"
 
 # Swap Server API URL
-SUBMARINE_API = "https://submarineswaps.org/api/v0"
-# SUBMARINE_API = "http://localhost:9889/api/v0"
+SUBMARINE_API_URL = "https://submarineswaps.org/api/v0"
+# SUBMARINE_API_URL = "http://localhost:9889/api/v0"
 
 # Blocksat details
 SATELLITE_API = "https://api.blockstream.space"

@@ -2,10 +2,10 @@ import logging
 from binascii import hexlify
 from pprint import pformat
 
-from lntenna.bitcoin.rpc import BitcoinProxy, SATOSHIS
+from lntenna.bitcoin import BitcoinProxy, SATOSHIS
 from lntenna.lightning.lnaddr import lndecode
 from lntenna.server.config import BLOCKSAT_NODE_PUBKEYS, FORMAT
-from lntenna.swap.decode_redeemscript import compare_redeemscript_invoice
+from lntenna.swap import compare_redeemscript_invoice
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)

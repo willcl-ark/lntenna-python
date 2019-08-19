@@ -4,10 +4,10 @@ from pprint import pformat
 
 from submarine_api import broadcast_tx
 
-from lntenna.bitcoin.rpc import BitcoinProxy
+from lntenna.bitcoin import BitcoinProxy
 from lntenna.database import db
-from lntenna.server.config import SUBMARINE_API, FORMAT
-from lntenna.swap.check_swap import check_swap
+from lntenna.server.config import FORMAT, SUBMARINE_API_URL
+from lntenna.swap import check_swap
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
@@ -30,7 +30,7 @@ def broadcast_transaction(uuid, tx_hex):
         logger.debug(f"Transaction submitted via bitcoind: {tx_hash}")
     else:
         logger.debug("Uploading transaction using submarine_api...")
-        tx_hash = broadcast_tx(SUBMARINE_API, network, tx_hex)
+        tx_hash = broadcast_tx(SUBMARINE_API_URL, network, tx_hex)
         logger.debug(f"Transaction submitted via submarine_api: {tx_hash}")
 
     return tx_hash

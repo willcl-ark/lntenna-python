@@ -1,12 +1,11 @@
 import hashlib
 
-from lntenna.bitcoin.rpc import BitcoinProxy
+from lntenna.bitcoin import BitcoinProxy
 
 proxy = BitcoinProxy().raw_proxy
 
 
 def compare_redeemscript_invoice(payment_hash: str, redeem_script: str):
-    # TODO: this could ideally decode BOLT11 invoice to get payment hash
     # decode bitcoin script
     decoded_script = proxy.decodescript(redeem_script)
     decoded_list = decoded_script["asm"].split(" ")
