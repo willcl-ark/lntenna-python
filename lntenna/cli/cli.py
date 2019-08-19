@@ -1,6 +1,7 @@
 #! usr/bin/python
 
 import cmd
+import simplejson as json
 
 from lntenna.gotenna.connection import Connection
 
@@ -14,7 +15,25 @@ class Lntenna(cmd.Cmd):
 
     def __init__(self, conn):
         self.conn = conn
+        self.sdk_token = None
+        self.GID = None
+        self.geo_region = None
+        self.config = False
         super().__init__()
+        self.check_for_config()
+
+    def check_for_config(self):
+        try:
+            from lntenna.server.config import CONFIG
+            if CONFIG["gotenna"]:
+                print("Config file found, loading SDK_TOKEN, GID and GEO_REGION")
+                self.conn.sdk_token(CONFIG["gotenna"]["SDK_TOKEN"])
+                self.conn.set_gid(int(CONFIG["gotenna"]["GID"]))
+                self.conn.set_geo_region(int(CONFIG["gotenna"]["GEO_REGION"]))
+                self.config = True
+                print("Config values set successfully")
+        except Exception:
+            pass
 
     def do_sdk_token(self, arg):
         """Set SDK Token for the connection
@@ -47,8 +66,30 @@ class Lntenna(cmd.Cmd):
         enter your message
         """
         if arg == "":
-            arg = input("Message:")
+            arg = input("Message: ")
         self.conn.send_broadcast(arg)
+
+    def do_send_sat_msg(self, arg):
+        """Send a message via the Blockstream Blocksat
+        You will be prompted for further details
+        Network must be either 'mainnet' or 'testnet'
+        """
+        if arg == '':
+            message = input("Message: ")
+            addr = input("Refund bitcoin address: ")
+            network = input("Network:")
+            assert network == "mainnet" or "testnet"
+            n = "m" if network is "mainnet" else "t"
+
+            req = {"sat_req":
+                       {"m": message,
+                        "a": addr,
+                        "n": n
+                        }
+                   }
+
+            self.conn.send_broadcast(json.dumps(req))
+
 
     @staticmethod
     def do_hello(s):

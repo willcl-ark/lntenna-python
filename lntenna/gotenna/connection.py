@@ -480,6 +480,7 @@ class Connection:
                 self.send_jumbo(json.dumps(sat_fill))
             if k == "sat_fill":
                 logger.debug("Processing a sat_fill message")
+                print("Received a quote response")
                 swap_tx = auto_swap_verify_quote(v)
                 self.send_jumbo(json.dumps(swap_tx))
             if k == "swap_tx":
