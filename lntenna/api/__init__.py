@@ -1,5 +1,5 @@
+from lntenna.api.auto_sat_swap import AutoSatSwap
 from lntenna.api.can_connect import CanConnect
-from lntenna.api.configure_bitcoin import ConfigureBitcoin
 from lntenna.api.get_connection_events import GetConnectionEvents
 from lntenna.api.get_device_type import GetDeviceType
 from lntenna.api.get_messages import GetMessages

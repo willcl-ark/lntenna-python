@@ -36,7 +36,6 @@ config.connection = Connection()
 
 api.add_resource(ApiRequest, "/gotenna/api/v1.0/api_request")
 api.add_resource(CanConnect, "/gotenna/api/v1.0/can_connect")
-api.add_resource(ConfigureBitcoin, "/bitcoin/api/v1.0/configure")
 api.add_resource(GetConnectionEvents, "/gotenna/api/v1.0/get_connection_events")
 api.add_resource(GetDeviceType, "/gotenna/api/v1.0/get_device_type")
 api.add_resource(GetMessages, "/gotenna/api/v1.0/get_messages")

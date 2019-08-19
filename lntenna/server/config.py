@@ -3,6 +3,7 @@ connection = None
 
 # Bitcoin
 BTC_CONF_PATH = "/Users/will/Library/Application Support/Bitcoin/testnet3/bitcoin.conf"
+BTC_NETWORK = "testnet"
 
 # Database
 DB_DIR = "/.lntenna/"
