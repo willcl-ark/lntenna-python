@@ -34,3 +34,10 @@ class BitcoinProxy:
     @property
     def proxy(self):
         return bitcoin.rpc.Proxy(btc_conf_file=self.btc_conf_file)
+
+    def send_last_tx(self):
+        """Try to broadcast the last tx in the wallet in case of errors during swap
+        """
+        last_txid = self.raw_proxy.listtransactions()[-1]["txid"]
+        tx_hex = self.raw_proxy.gettransaction(last_txid)['hex']
+        self.raw_proxy.sendrawtransaction(tx_hex)
