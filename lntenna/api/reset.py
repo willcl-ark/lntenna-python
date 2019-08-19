@@ -1,9 +1,9 @@
 #!flask/bin/python
 
+import goTenna
 from flask_restful import Resource
 
-import lntenna.server.config as config
-import goTenna
+import lntenna.server.conn as g
 from lntenna.gotenna.utilities import check_connection
 
 
@@ -15,10 +15,10 @@ class Reset(Resource):
 
     @check_connection
     def get(self):
-        if hasattr(config.connection, "api_thread") and isinstance(
-            config.connection.api_thread, goTenna.driver.Driver
+        if hasattr(g.CONN, "api_thread") and isinstance(
+            g.CONN.api_thread, goTenna.driver.Driver
         ):
-            config.connection.reset()
+            g.CONN.reset()
             status = "Connection and SDK token successfully reset"
         else:
             status = "No api_thread.sdk_token detected, nothing to reset"

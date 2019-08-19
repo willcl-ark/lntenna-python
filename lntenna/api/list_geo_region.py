@@ -2,7 +2,7 @@
 
 from flask_restful import Resource
 
-import lntenna.server.config as config
+import lntenna.server.conn as g
 from lntenna.gotenna.utilities import check_connection
 
 
@@ -12,4 +12,4 @@ class ListGeoRegion(Resource):
 
     @check_connection
     def get(self):
-        return {"allowed_geo_regions": config.connection.list_geo_region()}
+        return {"allowed_geo_regions": g.CONN.list_geo_region()}

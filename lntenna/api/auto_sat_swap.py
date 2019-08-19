@@ -3,7 +3,7 @@
 import simplejson as json
 from flask_restful import Resource, reqparse
 
-import lntenna.server.config as config
+import lntenna.server.conn as g
 from lntenna.gotenna.utilities import check_connection
 from lntenna.swap import auto_swap_create
 
@@ -26,5 +26,5 @@ class AutoSatSwap(Resource):
         # setup the blocksat quote and swap quote
         quotes = json.dumps(auto_swap_create(request))
         # broadcast the result back to sender
-        config.connection.send_jumbo(quotes)
+        g.CONN.send_jumbo(quotes)
         return

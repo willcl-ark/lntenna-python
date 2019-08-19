@@ -1,24 +1,29 @@
-# General
-connection = None
+import os
+from configparser import RawConfigParser
+from shutil import copyfile
 
-# Bitcoin
-BTC_CONF_PATH = "/Users/will/Library/Application Support/Bitcoin/testnet3/bitcoin.conf"
-BTC_NETWORK = "testnet"
 
-# Database
-DB_DIR = "/.lntenna/"
+home = os.path.expanduser("~")
+config_path = home + "/.lntenna/"
+if not os.path.exists(config_path):
+    print(f"Config file not found, copying example config... to {config_path}")
+    os.makedirs(config_path)
+    copyfile("example_config.ini", config_path + "config.ini")
 
-# Swap Server API URL
-SUBMARINE_API_URL = "https://submarineswaps.org/api/v0"
-# SUBMARINE_API_URL = "http://localhost:9889/api/v0"
+DEFAULT_CONFIG_FILE = config_path + "config.ini"
 
-# Blocksat details
-SATELLITE_API = "https://api.blockstream.space"
-TESTNET_SATELLITE_API = "https://api.blockstream.space/testnet"
-BLOCKSAT_NODE_PUBKEYS = [
-    "039d2201586141a3fff708067aa270aa4f6a724227d5740254d4e34da262a79c2a",
-    "03f21fc2e8ab0540eeb74dd715b5b66638ec1cd392db00009b320b3ed8c409bd57",
-]
 
-# logging
-FORMAT = "[%(levelname)s - %(funcname)s] - %(message)s"
+def get_config_file():
+    return os.environ.get("CONFIG_FILE", DEFAULT_CONFIG_FILE)
+
+
+CONFIG_FILE = get_config_file()
+
+
+def create_config(config_file=None):
+    parser = RawConfigParser()
+    parser.read(config_file or CONFIG_FILE)
+    return parser
+
+
+CONFIG = create_config()

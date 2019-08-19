@@ -9,11 +9,11 @@ import requests
 import simplejson as json
 
 import lntenna.bitcoin as btc
-from lntenna.api.message_codes import MSG_CODES
+from lntenna.api import MSG_CODES
 from lntenna.database import init as init_db, swap_lookup_payment_hash
 from lntenna.gotenna.events import Events
 from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment
-from lntenna.server.config import FORMAT
+from lntenna.server.config import CONFIG
 from lntenna.swap import (
     auto_swap_create,
     auto_swap_complete,
@@ -22,8 +22,8 @@ from lntenna.swap import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
-# mute some of the other module loggers
+logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
+# mute some of the other noisy loggers
 logging.getLogger("goTenna").setLevel(logging.CRITICAL)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 

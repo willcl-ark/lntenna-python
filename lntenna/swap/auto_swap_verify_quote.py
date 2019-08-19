@@ -5,11 +5,11 @@ from pprint import pformat
 from lntenna.bitcoin import BitcoinProxy, SATOSHIS
 from lntenna.database import add_verify_quote
 from lntenna.lightning.lnaddr import lndecode
-from lntenna.server.config import BLOCKSAT_NODE_PUBKEYS, FORMAT
+from lntenna.server.config import CONFIG
 from lntenna.swap.decode_redeemscript import compare_redeemscript_invoice
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
 
 def proxy():
@@ -27,7 +27,7 @@ def auto_swap_verify_quote(message):
     # Check the Pubkey from the invoice matches hardcoded keys
     logger.debug("Check decoded pubkey matches known blockstream pubkeys")
     pubkey = hexlify(decoded_inv.pubkey.serialize()).decode("utf-8")
-    assert pubkey in BLOCKSAT_NODE_PUBKEYS
+    assert pubkey in CONFIG["blocksat_pubkeys"].values()
     logger.debug(f"Pubkey {pubkey} successfully matched in hardcoded keys")
 
     # check the redeem_script matches the lightning invoice payment_hash

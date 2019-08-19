@@ -1,9 +1,8 @@
 #!flask/bin/python
 
-
 from flask_restful import Resource, reqparse
 
-import lntenna.server.config as config
+import lntenna.server.conn as g
 from lntenna.gotenna.utilities import check_connection, wait_for
 
 
@@ -22,10 +21,10 @@ class SendBroadcast(Resource):
     @check_connection
     def post(self):
         args = self.reqparse.parse_args(strict=True)
-        evt_start_len = config.connection.events.callback.qsize()
-        config.connection.send_broadcast(message=args["message"])
-        wait_for(lambda: config.connection.events.callback.qsize() > evt_start_len)
+        evt_start_len = g.CONN.events.callback.qsize()
+        g.CONN.send_broadcast(message=args["message"])
+        wait_for(lambda: g.CONN.events.callback.qsize() > evt_start_len)
         result = []
-        while config.connection.events.callback.qsize() > evt_start_len:
-            result.append(config.connection.events.callback.get())
+        while g.CONN.events.callback.qsize() > evt_start_len:
+            result.append(g.CONN.events.callback.get())
         return {"send_broadcast": result}

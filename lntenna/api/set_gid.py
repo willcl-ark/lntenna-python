@@ -2,7 +2,7 @@
 
 from flask_restful import Resource, reqparse
 
-import lntenna.server.config as config
+import lntenna.server.conn as g
 from lntenna.gotenna.utilities import check_connection
 
 
@@ -22,7 +22,7 @@ class SetGid(Resource):
     def post(self):
         args = self.reqparse.parse_args(strict=True)
         # purge existing GID
-        config.connection.api_thread.set_gid(None)
+        g.CONN.api_thread.set_gid(None)
         # set new gid
-        config.connection.set_gid(gid=args["gid"])
-        return {"gid": config.connection.api_thread.gid._gid_val}
+        g.CONN.set_gid(gid=args["gid"])
+        return {"gid": g.CONN.api_thread.gid._gid_val}

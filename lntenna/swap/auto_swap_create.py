@@ -1,13 +1,13 @@
 import logging
 from pprint import pformat
 
-from lntenna.server.config import FORMAT
+from lntenna.server.config import CONFIG
 from lntenna.swap.create_order import create_order
 from lntenna.swap.get_invoice_details import get_invoice_details
 from lntenna.swap.get_swap_quote import get_swap_quote
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
 
 def auto_swap_create(request):

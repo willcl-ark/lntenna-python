@@ -4,6 +4,7 @@ from lntenna.api.can_connect import CanConnect
 from lntenna.api.get_connection_events import GetConnectionEvents
 from lntenna.api.get_device_type import GetDeviceType
 from lntenna.api.get_messages import GetMessages
+from lntenna.api.message_codes import MSG_CODES
 from lntenna.api.get_system_info import GetSystemInfo
 from lntenna.api.list_geo_region import ListGeoRegion
 from lntenna.api.reset import Reset

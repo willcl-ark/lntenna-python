@@ -2,7 +2,7 @@
 
 from flask_restful import Resource
 
-import lntenna.server.config as config
+import lntenna.server.conn as g
 from lntenna.gotenna.utilities import check_connection
 
 
@@ -14,4 +14,4 @@ class GetConnectionEvents(Resource):
 
     @check_connection
     def get(self):
-        return {"connection_events": config.connection.events.get_all_connection()}
+        return {"connection_events": g.CONN.events.get_all_connection()}
