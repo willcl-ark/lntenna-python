@@ -10,10 +10,16 @@ import simplejson as json
 
 import lntenna.bitcoin as btc
 from lntenna.api.message_codes import MSG_CODES
+from lntenna.database import init as init_db
 from lntenna.gotenna.events import Events
 from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment
 from lntenna.server.config import FORMAT
-from lntenna.swap import auto_swap, auto_swap_complete, auto_swap_verify
+from lntenna.swap import (
+    auto_swap_create,
+    auto_swap_complete,
+    auto_swap_verify_quote,
+    auto_swap_verify_preimage,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
@@ -48,6 +54,8 @@ class Connection:
         self.geo_region = None
         self.events = Events()
         self.btc = btc.BitcoinProxy()
+        self.swap_payment_hash = None
+        self.swap_preimage = None
         self.gateway = 0
         self.jumbo_thread = threading.Thread()
 
@@ -411,11 +419,12 @@ class Connection:
                 self.events.jumbo_len = length
                 self.jumbo_thread = None
                 self.jumbo_thread = threading.Thread(
-                        target=self.monitor_jumbo_msgs, daemon=True
+                    target=self.monitor_jumbo_msgs, daemon=True
                 )
                 self.jumbo_thread.start()
             self.events.jumbo.append(payload)
-            return
+            return True
+        return False
 
     def handle_message(self, message):
         """
@@ -426,28 +435,39 @@ class Connection:
 
         # handle a jumbo message
         try:
-            self.handle_jumbo_message(message)
+            if self.handle_jumbo_message(message):
+                return
+            else:
+                pass
         except Exception:
             pass
 
         # handle a known message type defined in MSG_CODES
         payload = message.payload.message
         try:
+            # decode json-encoded strings
             payload = json.loads(payload)
-            if isinstance(payload, str):
-                json.loads(payload)
+            # if isinstance(payload, str):
+            #     json.loads(payload)
             for k, v in payload.items():
                 if k in MSG_CODES:
                     logger.debug(f"Handling a {k} message")
+                    # make sure all db tables needed exist
+                    # TODO: move this to more appropriate place
+                    init_db()
                     # pass the full request dict through to parse message type later
                     return self.handle_known_msg(payload)
                 else:
                     logger.debug(
-                        f"Received message but could not automatically handle:\n{payload}"
+                        f"Received json-encoded message but could not automatically "
+                        f"handle:\n{payload}"
                     )
-            # return self.handle_txtenna_message(payload)
         except Exception as e:
-            logger.debug(f"Raised exception:\n{e}")
+            logger.debug(
+                f"Raised exception when trying to handle message:\n"
+                f"Payload: {payload}\n"
+                f"Exception: {e}"
+            )
 
     def handle_known_msg(self, message):
         for k, v in message.items():
@@ -461,16 +481,26 @@ class Connection:
             if k == "sat_req":
                 # do an automatic blocksat and swap setup
                 logger.debug("Processing a sat_req message")
-                data = json.dumps(auto_swap(v))
+                data = json.dumps(auto_swap_create(v))
                 self.send_jumbo(data)
             if k == "sat_fill":
                 logger.debug("Processing a sat_fill message")
-                swap_paid = json.dumps(auto_swap_verify(v))
+                swap_paid = json.dumps(auto_swap_verify_quote(v))
                 self.send_jumbo(swap_paid)
             if k == "swap_tx":
                 logger.debug("Processing a swap_tx message")
                 swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"])
                 self.send_broadcast(json.dumps(swap_complete))
+            if k == "swap_complete":
+                logger.debug("Processing a swap_complete message")
+                try:
+                    msg = json.loads(v)
+                    # TODO: Lookup payment_hash from the db using UUID
+                    # payment_hash = db.
+                    if auto_swap_verify_preimage(msg["preimage"]):
+                        logger.debug(msg)
+                except Exception:
+                    logger.debug(v)
 
     def monitor_jumbo_msgs(self, timeout=30):
         logger.debug("Starting jumbo message monitor thread")

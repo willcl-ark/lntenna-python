@@ -1,6 +1,6 @@
 import submarine_api
 from lntenna.server.config import SUBMARINE_API_URL
-from lntenna.swap import try_json
+from lntenna.swap.utilities import try_json
 
 
 @try_json

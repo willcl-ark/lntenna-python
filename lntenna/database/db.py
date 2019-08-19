@@ -71,6 +71,21 @@ swaps = Table(
     Column("payment_secret", String),
 )
 
+# a mesh table which will be utilised by offgrid nodes who won't get full responses
+mesh = Table(
+    "mesh",
+    metadata,
+    Column("uuid", String(32), ForeignKey("orders.uuid"), primary_key=True),
+    Column("destination_public_key", String),
+    Column("invoice", String),
+    Column("payment_hash", String),
+    Column("redeem_script", String),
+    Column("refund_address", String),
+    Column("swap_amount", Integer),
+    Column("swap_p2sh_address", String),
+    Column("payment_secret", String),
+)
+
 
 # This will check for the presence of each table first before creating, so it's safe to
 # call multiple times
@@ -185,5 +200,23 @@ def lookup_swap_details(uuid):
     s = select([orders.c.network, swaps.c.invoice, swaps.c.redeem_script]).where(
         or_(swaps.c.uuid == uuid, orders.c.uuid == uuid)
     )
-    result = conn.execute(s).fetchone()
+    # result = conn.execute(s).fetchone()
     return conn.execute(s).fetchone().values()
+
+
+def add_verify_quote(uuid, inv, amt, addr, r_s, pubkey, payment_hash):
+    with engine.connect() as conn:
+        ins = mesh.insert()
+        try:
+            conn.execute(
+                ins,
+                uuid=uuid,
+                destination_public_key=pubkey,
+                invoice=inv,
+                payment_hash=payment_hash,
+                redeem_script=r_s,
+                swap_amount=amt,
+                swap_p2sh_address=addr,
+            )
+        except IntegrityError as e:
+            raise e

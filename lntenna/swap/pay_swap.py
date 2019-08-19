@@ -1,7 +1,7 @@
 import lntenna.database as db
 from lntenna.bitcoin import BitcoinProxy, SATOSHIS
 from lntenna.server.bitcoind_password import BITCOIND_PW
-from lntenna.swap import try_json
+from lntenna.swap.utilities import try_json
 
 
 @try_json
