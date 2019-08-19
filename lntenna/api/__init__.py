@@ -1,4 +1,5 @@
 from lntenna.api.auto_sat_swap import AutoSatSwap
+from lntenna.api.bitcoin_rawproxy import RpcRawProxy
 from lntenna.api.can_connect import CanConnect
 from lntenna.api.get_connection_events import GetConnectionEvents
 from lntenna.api.get_device_type import GetDeviceType
@@ -6,8 +7,6 @@ from lntenna.api.get_messages import GetMessages
 from lntenna.api.get_system_info import GetSystemInfo
 from lntenna.api.list_geo_region import ListGeoRegion
 from lntenna.api.reset import Reset
-from lntenna.api.rpc_getrawtransaction import RpcGetrawtransaction
-from lntenna.api.bitcoin_rawproxy import RpcRawProxy
 from lntenna.api.sdk_token import SdkToken
 from lntenna.api.send_api_req import ApiRequest
 from lntenna.api.send_broadcast import SendBroadcast
