@@ -11,7 +11,11 @@ from lntenna.swap.decode_redeemscript import compare_redeemscript_invoice
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
 
-proxy = BitcoinProxy().raw_proxy
+
+def proxy():
+    """Return a fresh proxy instance for each call
+    """
+    return BitcoinProxy().raw_proxy
 
 
 def auto_swap_verify_quote(message):
@@ -32,6 +36,15 @@ def auto_swap_verify_quote(message):
     assert compare_redeemscript_invoice(payment_hash, message["r_s"])
     logger.debug("Redeem script and lightning invoice match")
 
+    # create the bitcoin transaction
+    amount = f'{message["amt"] / SATOSHIS:.8f}'
+    result["tx_hash"] = proxy().sendtoaddress(message["addr"], amount)
+    tx_hash = proxy().gettransaction(result["tx_hash"])
+    result["tx_hex"] = tx_hash["hex"]
+    # TODO: for separate machines should change to getrawtransaction as per below
+    # result["tx_hex"] = proxy.getrawtransaction(result["tx_hash"])
+    result["uuid"] = message["uuid"]
+
     # write to db as we don't have it on our side yet.:
     add_verify_quote(
         message["uuid"],
@@ -41,15 +54,9 @@ def auto_swap_verify_quote(message):
         message["r_s"],
         pubkey,
         payment_hash,
+        tx_hash["txid"],
+        tx_hash["hex"],
     )
 
-    # create the bitcoin transaction
-    amount = f'{message["amt"] / SATOSHIS:.8f}'
-    result["tx_hash"] = proxy.sendtoaddress(message["addr"], amount)
-    tx = proxy.gettransaction(result["tx_hash"])
-    result["tx_hex"] = tx["hex"]
-    # TODO: for separate machines should change to getrawtransaction as per below
-    # result["tx_hex"] = proxy.getrawtransaction(result["tx_hash"])
-    result["uuid"] = message["uuid"]
     logger.debug(f"Returning result from auto_swap_verify_quote(): {pformat(result)}")
     return {"swap_tx": result}

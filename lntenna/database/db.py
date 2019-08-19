@@ -5,6 +5,7 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
+    Boolean,
     MetaData,
     String,
     Table,
@@ -83,7 +84,10 @@ mesh = Table(
     Column("refund_address", String),
     Column("swap_amount", Integer),
     Column("swap_p2sh_address", String),
-    Column("payment_secret", String),
+    Column("preimage", String),
+    Column("tx_hash", String),
+    Column("tx_hex", String),
+    Column("swap_complete", Boolean),
 )
 
 
@@ -200,11 +204,10 @@ def lookup_swap_details(uuid):
     s = select([orders.c.network, swaps.c.invoice, swaps.c.redeem_script]).where(
         or_(swaps.c.uuid == uuid, orders.c.uuid == uuid)
     )
-    # result = conn.execute(s).fetchone()
     return conn.execute(s).fetchone().values()
 
 
-def add_verify_quote(uuid, inv, amt, addr, r_s, pubkey, payment_hash):
+def add_verify_quote(uuid, inv, amt, addr, r_s, pubkey, payment_hash, tx_hash, tx_hex):
     with engine.connect() as conn:
         ins = mesh.insert()
         try:
@@ -217,6 +220,28 @@ def add_verify_quote(uuid, inv, amt, addr, r_s, pubkey, payment_hash):
                 redeem_script=r_s,
                 swap_amount=amt,
                 swap_p2sh_address=addr,
+                tx_hash=tx_hash,
+                tx_hex=tx_hex,
+                swap_complete=False,
             )
         except IntegrityError as e:
             raise e
+
+
+def swap_lookup_payment_hash(uuid):
+    conn = engine.connect()
+    s = select([mesh.c.payment_hash]).where(mesh.c.uuid == uuid)
+    return conn.execute(s).fetchone().values()[0]
+
+
+def swap_add_preimage(uuid, preimage):
+    conn = engine.connect()
+    up = (
+        mesh.update()
+        .where(mesh.c.uuid == uuid)
+        .values(preimage=preimage, swap_complete=True)
+    )
+    try:
+        conn.execute(up)
+    except IntegrityError as e:
+        raise e

@@ -10,7 +10,7 @@ import simplejson as json
 
 import lntenna.bitcoin as btc
 from lntenna.api.message_codes import MSG_CODES
-from lntenna.database import init as init_db
+from lntenna.database import init as init_db, swap_lookup_payment_hash
 from lntenna.gotenna.events import Events
 from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment
 from lntenna.server.config import FORMAT
@@ -481,12 +481,12 @@ class Connection:
             if k == "sat_req":
                 # do an automatic blocksat and swap setup
                 logger.debug("Processing a sat_req message")
-                data = json.dumps(auto_swap_create(v))
-                self.send_jumbo(data)
+                sat_fill = auto_swap_create(v)
+                self.send_jumbo(json.dumps(sat_fill))
             if k == "sat_fill":
                 logger.debug("Processing a sat_fill message")
-                swap_paid = json.dumps(auto_swap_verify_quote(v))
-                self.send_jumbo(swap_paid)
+                swap_tx = auto_swap_verify_quote(v)
+                self.send_jumbo(json.dumps(swap_tx))
             if k == "swap_tx":
                 logger.debug("Processing a swap_tx message")
                 swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"])
@@ -494,11 +494,12 @@ class Connection:
             if k == "swap_complete":
                 logger.debug("Processing a swap_complete message")
                 try:
-                    msg = json.loads(v)
-                    # TODO: Lookup payment_hash from the db using UUID
-                    # payment_hash = db.
-                    if auto_swap_verify_preimage(msg["preimage"]):
-                        logger.debug(msg)
+                    # msg = json.loads(v)
+                    payment_hash = swap_lookup_payment_hash(v["uuid"])
+                    if auto_swap_verify_preimage(
+                        v["uuid"], v["preimage"], payment_hash
+                    ):
+                        logger.debug(v)
                 except Exception:
                     logger.debug(v)
 
