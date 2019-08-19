@@ -103,15 +103,12 @@ class Connection:
         This will be invoked from the API's thread when events are received.
         """
         if evt.event_type == goTenna.driver.Event.MESSAGE:
+            self.events.msg.put(evt)
             try:
-                self.events.msg.put(evt)
-                # TODO: check this affects txtenna only
-                if self.gateway == 1:
-                    thread = threading.Thread(
-                        target=self.handle_message, args=[evt.message]
-                    )
-                    thread.start()
-                    # self.handle_message(evt.message)
+                thread = threading.Thread(
+                    target=self.handle_message, args=[evt.message]
+                )
+                thread.start()
             except Exception:
                 traceback.print_exc()
         elif evt.event_type == goTenna.driver.Event.DEVICE_PRESENT:
@@ -447,8 +444,6 @@ class Connection:
         try:
             # decode json-encoded strings
             payload = json.loads(payload)
-            # if isinstance(payload, str):
-            #     json.loads(payload)
             for k, v in payload.items():
                 if k in MSG_CODES:
                     logger.debug(f"Handling a {k} message")
