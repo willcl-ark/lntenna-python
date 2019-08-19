@@ -9,6 +9,8 @@ from lntenna.gotenna.utilities import check_connection
 
 class Reset(Resource):
     def __init__(self):
+        self.help = """Attempts to flush the driver and SDK token to allow reset without
+         restarting the server. Not always successful so check success."""
         super(Reset, self).__init__()
 
     @check_connection

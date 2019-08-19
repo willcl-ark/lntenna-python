@@ -5,6 +5,7 @@ from sqlalchemy import (
     Column,
     ForeignKey,
     Integer,
+    Boolean,
     MetaData,
     String,
     Table,
@@ -69,6 +70,24 @@ swaps = Table(
     Column("swap_p2wsh_address", String),
     Column("timeout_block_height", Integer),
     Column("payment_secret", String),
+)
+
+# a mesh table which will be utilised by offgrid nodes who won't get full responses
+mesh = Table(
+    "mesh",
+    metadata,
+    Column("uuid", String(32), ForeignKey("orders.uuid"), primary_key=True),
+    Column("destination_public_key", String),
+    Column("invoice", String),
+    Column("payment_hash", String),
+    Column("redeem_script", String),
+    Column("refund_address", String),
+    Column("swap_amount", Integer),
+    Column("swap_p2sh_address", String),
+    Column("preimage", String),
+    Column("tx_hash", String),
+    Column("tx_hex", String),
+    Column("swap_complete", Boolean),
 )
 
 
@@ -185,11 +204,44 @@ def lookup_swap_details(uuid):
     s = select([orders.c.network, swaps.c.invoice, swaps.c.redeem_script]).where(
         or_(swaps.c.uuid == uuid, orders.c.uuid == uuid)
     )
-    result = conn.execute(s).fetchone()
     return conn.execute(s).fetchone().values()
 
 
-def lookup_network(uuid):
+def add_verify_quote(uuid, inv, amt, addr, r_s, pubkey, payment_hash, tx_hash, tx_hex):
+    with engine.connect() as conn:
+        ins = mesh.insert()
+        try:
+            conn.execute(
+                ins,
+                uuid=uuid,
+                destination_public_key=pubkey,
+                invoice=inv,
+                payment_hash=payment_hash,
+                redeem_script=r_s,
+                swap_amount=amt,
+                swap_p2sh_address=addr,
+                tx_hash=tx_hash,
+                tx_hex=tx_hex,
+                swap_complete=False,
+            )
+        except IntegrityError as e:
+            raise e
+
+
+def swap_lookup_payment_hash(uuid):
     conn = engine.connect()
-    s = select([orders.c.network]).where(orders.c.uuid == uuid)
-    return conn.execute(s).fetchone().values()
+    s = select([mesh.c.payment_hash]).where(mesh.c.uuid == uuid)
+    return conn.execute(s).fetchone().values()[0]
+
+
+def swap_add_preimage(uuid, preimage):
+    conn = engine.connect()
+    up = (
+        mesh.update()
+        .where(mesh.c.uuid == uuid)
+        .values(preimage=preimage, swap_complete=True)
+    )
+    try:
+        conn.execute(up)
+    except IntegrityError as e:
+        raise e

@@ -8,7 +8,8 @@ from lntenna.gotenna.utilities import prepare_api_request
 
 
 class ApiRequest(Resource):
-    """All api requests are called via 'POST'
+    """This method should always be called via a 'POST' request. Internally the
+    api_request can be requesting any type of request (POST, GET etc.)
 
     Takes a single json field, which should contain json
     representation of the request in dict of the form:
@@ -28,7 +29,10 @@ class ApiRequest(Resource):
     def __init__(self):
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(
-            "api_request", required=False, help="api_request", location="json"
+            "api_request",
+            required=False,
+            help="api_request dictionary",
+            location="json",
         )
         super(ApiRequest, self).__init__()
 

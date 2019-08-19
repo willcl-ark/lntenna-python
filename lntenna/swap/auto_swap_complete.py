@@ -4,9 +4,9 @@ from pprint import pformat
 
 from submarine_api import broadcast_tx
 
-from lntenna.bitcoin.rpc import BitcoinProxy
-from lntenna.database import db
-from lntenna.server.config import SUBMARINE_API, FORMAT
+import lntenna.database as db
+from lntenna.bitcoin import BitcoinProxy
+from lntenna.server.config import FORMAT, SUBMARINE_API_URL
 from lntenna.swap.check_swap import check_swap
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def broadcast_transaction(uuid, tx_hex):
         logger.debug(f"Transaction submitted via bitcoind: {tx_hash}")
     else:
         logger.debug("Uploading transaction using submarine_api...")
-        tx_hash = broadcast_tx(SUBMARINE_API, network, tx_hex)
+        tx_hash = broadcast_tx(SUBMARINE_API_URL, network, tx_hex)
         logger.debug(f"Transaction submitted via submarine_api: {tx_hash}")
 
     return tx_hash
@@ -51,10 +51,10 @@ def monitor_swap_status(uuid):
 
 
 def auto_swap_complete(uuid, tx_hex):
-    result = {}
+    result = {"uuid": uuid}
     # broadcast the tx
     result["tx_hash"] = broadcast_transaction(uuid, tx_hex)
     # monitor the swap status to see when the swap has been fulfilled
     result["preimage"] = monitor_swap_status(uuid)
     logger.debug(f"auto_swap_complete result: {pformat(result)}")
-    return {"SWAP_COMPLETE": result}
+    return {"swap_complete": result}

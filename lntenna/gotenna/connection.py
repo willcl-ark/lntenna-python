@@ -8,18 +8,22 @@ import goTenna
 import requests
 import simplejson as json
 
-import lntenna.txtenna as txtenna
+import lntenna.bitcoin as btc
 from lntenna.api.message_codes import MSG_CODES
-from lntenna.bitcoin.rpc import BitcoinProxy
+from lntenna.database import init as init_db, swap_lookup_payment_hash
 from lntenna.gotenna.events import Events
 from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment
-from lntenna.swap.auto_swap_complete import auto_swap_complete
-from lntenna.swap.auto_swap_create import auto_swap
-from lntenna.swap.auto_swap_verify import auto_swap_verify
 from lntenna.server.config import FORMAT
+from lntenna.swap import (
+    auto_swap_create,
+    auto_swap_complete,
+    auto_swap_verify_quote,
+    auto_swap_verify_preimage,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+# mute some of the other module loggers
 logging.getLogger("goTenna").setLevel(logging.CRITICAL)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
@@ -46,23 +50,14 @@ class Connection:
         )
         self._do_encryption = True
         self._awaiting_disconnect_after_fw_update = [False]
-        self.messageIdx = 0
-        self.local = False
-        self.segment_storage = txtenna.SegmentStorage()
-        self.send_dir = None
-        self.receive_dir = None
-        self.watch_dir_thread = None
-        self.pipe_file = None
         self.gid = (None,)
         self.geo_region = None
         self.events = Events()
-        self.btc = BitcoinProxy()
+        self.btc = btc.BitcoinProxy()
+        self.swap_payment_hash = None
+        self.swap_preimage = None
         self.gateway = 0
         self.jumbo_thread = threading.Thread()
-
-    # @property
-    # def jumbo_thread(self):
-    #     return threading.Thread(target=self.monitor_jumbo_msgs, daemon=True)
 
     def reset_connection(self):
         if self.api_thread:
@@ -412,6 +407,25 @@ class Connection:
             return "Device must be connected"
         return self.api_thread.system_info
 
+    def handle_jumbo_message(self, message):
+        payload = message.payload.message
+        if payload.startswith("sm/"):
+            # TODO: this cuts out all sender and receiver info -- ADD SENDER GID
+            logger.debug(f"Received jumbo message fragment")
+            prefix, seq, length, msg = payload.split("/")
+            if self.jumbo_thread.is_alive():
+                pass
+            else:
+                self.events.jumbo_len = length
+                self.jumbo_thread = None
+                self.jumbo_thread = threading.Thread(
+                    target=self.monitor_jumbo_msgs, daemon=True
+                )
+                self.jumbo_thread.start()
+            self.events.jumbo.append(payload)
+            return True
+        return False
+
     def handle_message(self, message):
         """
         Handle messages received over the mesh network
@@ -419,44 +433,43 @@ class Connection:
         :return: result of message handling
         """
 
-        payload = message.payload.message
         # handle a jumbo message
         try:
-            if payload.startswith("sm/"):
-                # TODO: this cuts out all sender and receiver info -- ADD SENDER GID
-                logger.debug(f"Received jumbo message fragment")
-                prefix, seq, length, msg = payload.split("/")
-                if self.jumbo_thread.is_alive():
-                    pass
-                else:
-                    self.events.jumbo_len = length
-                    self.jumbo_thread = None
-                    self.jumbo_thread = threading.Thread(target=self.monitor_jumbo_msgs, daemon=True)
-                    self.jumbo_thread.start()
-                self.events.jumbo.append(payload)
+            if self.handle_jumbo_message(message):
                 return
+            else:
+                pass
         except Exception:
             pass
 
         # handle a known message type defined in MSG_CODES
+        payload = message.payload.message
         try:
+            # decode json-encoded strings
             payload = json.loads(payload)
-            if isinstance(payload, str):
-                json.loads(payload)
+            # if isinstance(payload, str):
+            #     json.loads(payload)
             for k, v in payload.items():
                 if k in MSG_CODES:
                     logger.debug(f"Handling a {k} message")
+                    # make sure all db tables needed exist
+                    # TODO: move this to more appropriate place
+                    init_db()
                     # pass the full request dict through to parse message type later
-                    return self.handle_non_txtenna_msg(payload)
+                    return self.handle_known_msg(payload)
                 else:
                     logger.debug(
-                            f"Received message but could not automatically handle:\n{payload}"
+                        f"Received json-encoded message but could not automatically "
+                        f"handle:\n{payload}"
                     )
-            # return self.handle_txtenna_message(payload)
         except Exception as e:
-            logger.debug(f"Raised exception:\n{e}")
+            logger.debug(
+                f"Raised exception when trying to handle message:\n"
+                f"Payload: {payload}\n"
+                f"Exception: {e}"
+            )
 
-    def handle_non_txtenna_msg(self, message):
+    def handle_known_msg(self, message):
         for k, v in message.items():
             if k == "api_request":
                 logger.debug("Processing a api_request message")
@@ -468,16 +481,27 @@ class Connection:
             if k == "sat_req":
                 # do an automatic blocksat and swap setup
                 logger.debug("Processing a sat_req message")
-                data = json.dumps(auto_swap(v))
-                self.send_jumbo(data)
+                sat_fill = auto_swap_create(v)
+                self.send_jumbo(json.dumps(sat_fill))
             if k == "sat_fill":
                 logger.debug("Processing a sat_fill message")
-                swap_paid = json.dumps(auto_swap_verify(v))
-                self.send_jumbo(swap_paid)
+                swap_tx = auto_swap_verify_quote(v)
+                self.send_jumbo(json.dumps(swap_tx))
             if k == "swap_tx":
                 logger.debug("Processing a swap_tx message")
                 swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"])
                 self.send_broadcast(json.dumps(swap_complete))
+            if k == "swap_complete":
+                logger.debug("Processing a swap_complete message")
+                try:
+                    # msg = json.loads(v)
+                    payment_hash = swap_lookup_payment_hash(v["uuid"])
+                    if auto_swap_verify_preimage(
+                        v["uuid"], v["preimage"], payment_hash
+                    ):
+                        logger.debug(v)
+                except Exception:
+                    logger.debug(v)
 
     def monitor_jumbo_msgs(self, timeout=30):
         logger.debug("Starting jumbo message monitor thread")
@@ -504,47 +528,3 @@ class Connection:
         # reset jumbo events after timeout
         self.events.init_jumbo()
         return
-
-    ###########
-    # txtenna #
-    ###########
-
-    def rpc_getrawtransaction(self, tx_id):
-        return txtenna.rpc_getrawtransaction(self, tx_id)
-
-    def confirm_bitcoin_tx_local(self, _hash, sender_gid, timeout=30):
-        return txtenna.confirm_bitcoin_tx_local(self, _hash, sender_gid, timeout)
-
-    @staticmethod
-    def create_output_data_struct(data):
-        return txtenna.create_output_data_struct(data)
-
-    def receive_message_from_gateway(self, filename):
-        return txtenna.receive_message_from_gateway(self, filename)
-
-    def handle_txtenna_message(self, message):
-        return txtenna.handle_txtenna_message(self, message)
-
-    def mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network):
-        return txtenna.mesh_broadcast_rawtx(self, str_hex_tx, str_hex_tx_hash, network)
-
-    def rpc_getbalance(self):
-        return txtenna.rpc_getbalance(self)
-
-    def rpc_sendrawtransaction(self, tx_hex):
-        return txtenna.rpc_sendrawtransaction(self, tx_hex)
-
-    def rpc_sendtoaddress(self, addr, amount):
-        return txtenna.rpc_sendtoaddress(self, addr, amount)
-
-    def mesh_sendtoaddress(self, addr, sats, network):
-        return txtenna.mesh_sendtoaddress(self, addr, sats, network)
-
-    def broadcast_messages(self, send_dir):
-        return txtenna.broadcast_messages(self, send_dir)
-
-    def watch_messages(self, send_dir):
-        return txtenna.watch_messages(self, send_dir)
-
-    def broadcast_message_files(self, directory, filenames):
-        return txtenna.broadcast_message_files(self, directory, filenames)

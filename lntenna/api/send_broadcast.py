@@ -1,15 +1,10 @@
 #!flask/bin/python
 
-import logging
 
 from flask_restful import Resource, reqparse
 
 import lntenna.server.config as config
-from lntenna.gotenna.utilities import wait_for, check_connection
-
-logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s - %(levelname)s] - %(message)s"
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+from lntenna.gotenna.utilities import check_connection, wait_for
 
 
 class SendBroadcast(Resource):
@@ -28,7 +23,6 @@ class SendBroadcast(Resource):
     def post(self):
         args = self.reqparse.parse_args(strict=True)
         evt_start_len = config.connection.events.callback.qsize()
-        logger.debug("send_broadcast evt_start_len is {}".format(evt_start_len))
         config.connection.send_broadcast(message=args["message"])
         wait_for(lambda: config.connection.events.callback.qsize() > evt_start_len)
         result = []

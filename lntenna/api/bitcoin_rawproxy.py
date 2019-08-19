@@ -10,6 +10,7 @@ from lntenna.gotenna.utilities import check_connection
 
 class RpcRawProxy(Resource):
     def __init__(self):
+        self.help = """Calls python-bitcoinlib's RawProxy class to make an RPC call."""
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(
             "command",
