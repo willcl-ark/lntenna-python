@@ -18,6 +18,7 @@ from lntenna.swap import auto_swap, auto_swap_complete, auto_swap_verify
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+# mute some of the other module loggers
 logging.getLogger("goTenna").setLevel(logging.CRITICAL)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 

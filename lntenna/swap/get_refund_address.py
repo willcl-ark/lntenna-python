@@ -1,4 +1,4 @@
-from lntenna.database import db
+import lntenna.database as db
 from lntenna.bitcoin.rpc import BitcoinProxy
 from lntenna.swap.utilities import try_json
 

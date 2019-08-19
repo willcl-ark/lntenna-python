@@ -1,4 +1,4 @@
-from lntenna.database import db
+import lntenna.database as db
 from lntenna.server.config import SUBMARINE_API_URL
 from lntenna.swap.utilities import try_json
 import submarine_api

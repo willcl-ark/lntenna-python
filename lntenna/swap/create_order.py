@@ -2,8 +2,9 @@ import logging
 from uuid import uuid4
 
 from blocksat_api import blocksat
-from lntenna.database import db
-from lntenna.server.config import SATELLITE_API, TESTNET_SATELLITE_API, FORMAT
+
+import lntenna.database as db
+from lntenna.server.config import FORMAT, SATELLITE_API, TESTNET_SATELLITE_API
 from lntenna.swap.utilities import try_json
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,8 @@ def create_order(message: str, bid: str, network: str):
             )
         except Exception as e:
             raise {"exception": e, "result": result}
-    logging.debug(f"Successfully created blocksat order:\n{result.json()} using "
-    f"satellite_url {satellite_url} and uuid {uuid}")
+    logging.debug(
+        f"Successfully created blocksat order:\n{result.json()} using "
+        f"satellite_url {satellite_url} and uuid {uuid}"
+    )
     return {"response": result.json(), "uuid": uuid}

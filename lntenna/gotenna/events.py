@@ -29,11 +29,11 @@ class Events:
         queues = [self.device_present, self.connect, self.disconnect]
         result = {}
 
-        for queue in queues:
+        for q in queues:
             lst = []
-            while not queue.empty():
-                lst.append(handle_event(queue.get()))
-            result[queue._name] = lst
+            while not q.empty():
+                lst.append(handle_event(q.get()))
+            result[q._name] = lst
 
         return result
 

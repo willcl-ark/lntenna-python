@@ -1,6 +1,6 @@
-from lntenna.server.bitcoind_password import BITCOIND_PW
-from lntenna.database import db
+import lntenna.database as db
 from lntenna.bitcoin import BitcoinProxy, SATOSHIS
+from lntenna.server.bitcoind_password import BITCOIND_PW
 from lntenna.swap import try_json
 
 
@@ -13,14 +13,10 @@ def pay_swap(uuid: str):
     # unlock the wallet if locked
     network = db.lookup_network(uuid)
     try:
-        txid = proxy.sendtoaddress(
-            swap_p2sh_address, swap_amount_bitcoin
-        )
+        txid = proxy.sendtoaddress(swap_p2sh_address, swap_amount_bitcoin)
     except Exception:
         proxy.walletpassphrase(BITCOIND_PW, 60)
-        txid = proxy.sendtoaddress(
-            swap_p2sh_address, swap_amount_bitcoin
-        )
+        txid = proxy.sendtoaddress(swap_p2sh_address, swap_amount_bitcoin)
         proxy.walletlock()
 
     # add the txid to the db

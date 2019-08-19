@@ -4,8 +4,8 @@ from pprint import pformat
 
 from submarine_api import broadcast_tx
 
+import lntenna.database as db
 from lntenna.bitcoin import BitcoinProxy
-from lntenna.database import db
 from lntenna.server.config import FORMAT, SUBMARINE_API_URL
 from lntenna.swap import check_swap
 

@@ -21,7 +21,7 @@ from flask_restful import Api
 
 import lntenna.server.config as config
 from lntenna.api import *
-from lntenna.database import db
+from lntenna.database import *
 from lntenna.gotenna.connection import Connection
 from lntenna.server.config import FORMAT
 
