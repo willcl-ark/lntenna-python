@@ -187,9 +187,3 @@ def lookup_swap_details(uuid):
     )
     result = conn.execute(s).fetchone()
     return conn.execute(s).fetchone().values()
-
-
-def lookup_network(uuid):
-    conn = engine.connect()
-    s = select([orders.c.network]).where(orders.c.uuid == uuid)
-    return conn.execute(s).fetchone().values()
