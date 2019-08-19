@@ -4,20 +4,20 @@ from uuid import uuid4
 from blocksat_api import blocksat
 
 import lntenna.database as db
-from lntenna.server.config import FORMAT, SATELLITE_API, TESTNET_SATELLITE_API
+from lntenna.server.config import CONFIG
 from lntenna.swap.utilities import try_json
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
 
 @try_json
 def create_order(message: str, bid: str, network: str):
     logger.debug("Creating blocksat order")
     if network.strip().lower() == "testnet":
-        satellite_url = TESTNET_SATELLITE_API
+        satellite_url = CONFIG["blocksat"]["TESTNET_URL"]
     elif network.strip().lower() == "mainnet":
-        satellite_url = SATELLITE_API
+        satellite_url = CONFIG["blocksat"]["MAINNET_URL"]
     else:
         return {"response": "Invalid network"}
     uuid = str(uuid4())[:8]

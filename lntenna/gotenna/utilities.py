@@ -5,11 +5,11 @@ import time
 import requests
 import simplejson as json
 
-import lntenna.server.config
-from lntenna.server.config import FORMAT
+import lntenna.server.conn as g
+from lntenna.server.config import CONFIG
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
 MSG_TYPE = {2: "BROADCAST", 3: "EMERGENCY", 1: "GROUP", 0: "PRIVATE"}
 
@@ -65,7 +65,7 @@ def wait_for(success, timeout=20, interval=1):
 
 def check_connection(func):
     def exists(*args, **kwargs):
-        if lntenna.server.config.connection is None:
+        if g.CONN is None:
             return {
                 "status": "Connection does not exist. \
                     First create connection using 'sdk_token()'"

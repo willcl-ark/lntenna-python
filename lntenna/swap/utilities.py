@@ -3,10 +3,10 @@ import logging
 import time
 from secrets import token_hex
 
-from lntenna.server.config import FORMAT
+from lntenna.server.config import CONFIG
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
 
 def create_random_message():

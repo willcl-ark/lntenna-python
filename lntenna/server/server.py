@@ -16,23 +16,25 @@ import logging
 
 from docopt import docopt
 from flask import Flask
-from flask_httpauth import HTTPBasicAuth
 from flask_restful import Api
 
-import lntenna.server.config as config
 from lntenna.api import *
 from lntenna.database import *
 from lntenna.gotenna.connection import Connection
-from lntenna.server.config import FORMAT
+from lntenna.server.config import CONFIG
+import lntenna.server.conn as g
 
+
+g.CONN = Connection()
+
+# setup logger
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
+# setup Flask REST API
 app = Flask(__name__)
 app.config["DEBUG"] = True
 api = Api(app)
-auth = HTTPBasicAuth()
-config.connection = Connection()
 
 api.add_resource(ApiRequest, "/gotenna/api/v1.0/api_request")
 api.add_resource(CanConnect, "/gotenna/api/v1.0/can_connect")
@@ -54,9 +56,12 @@ def main(port):
 
 
 if __name__ == "__main__":
+
+    # read docopt arguments
     arguments = docopt(__doc__)
     print(arguments)
+
     if arguments["--gateway"]:
-        config.connection.gateway = 1
+        g.CONN.gateway = 1
     db.init()
     main(port=arguments["--port"])

@@ -9,11 +9,11 @@ import requests
 import simplejson as json
 
 import lntenna.bitcoin as btc
-from lntenna.api.message_codes import MSG_CODES
+from lntenna.api import MSG_CODES
 from lntenna.database import init as init_db, swap_lookup_payment_hash
 from lntenna.gotenna.events import Events
 from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment
-from lntenna.server.config import FORMAT
+from lntenna.server.config import CONFIG
 from lntenna.swap import (
     auto_swap_create,
     auto_swap_complete,
@@ -22,8 +22,8 @@ from lntenna.swap import (
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format=FORMAT)
-# mute some of the other module loggers
+logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
+# mute some of the other noisy loggers
 logging.getLogger("goTenna").setLevel(logging.CRITICAL)
 logging.getLogger("urllib3").setLevel(logging.INFO)
 
@@ -103,15 +103,12 @@ class Connection:
         This will be invoked from the API's thread when events are received.
         """
         if evt.event_type == goTenna.driver.Event.MESSAGE:
+            self.events.msg.put(evt)
             try:
-                self.events.msg.put(evt)
-                # TODO: check this affects txtenna only
-                if self.gateway == 1:
-                    thread = threading.Thread(
-                        target=self.handle_message, args=[evt.message]
-                    )
-                    thread.start()
-                    # self.handle_message(evt.message)
+                thread = threading.Thread(
+                    target=self.handle_message, args=[evt.message]
+                )
+                thread.start()
             except Exception:
                 traceback.print_exc()
         elif evt.event_type == goTenna.driver.Event.DEVICE_PRESENT:
@@ -447,8 +444,6 @@ class Connection:
         try:
             # decode json-encoded strings
             payload = json.loads(payload)
-            # if isinstance(payload, str):
-            #     json.loads(payload)
             for k, v in payload.items():
                 if k in MSG_CODES:
                     logger.debug(f"Handling a {k} message")
@@ -485,6 +480,7 @@ class Connection:
                 self.send_jumbo(json.dumps(sat_fill))
             if k == "sat_fill":
                 logger.debug("Processing a sat_fill message")
+                print("Received a quote response")
                 swap_tx = auto_swap_verify_quote(v)
                 self.send_jumbo(json.dumps(swap_tx))
             if k == "swap_tx":

@@ -1,9 +1,8 @@
 #!flask/bin/python
 
-
 from flask_restful import Resource, reqparse
 
-import lntenna.server.config as config
+import lntenna.server.conn as g
 from lntenna.gotenna.utilities import check_connection
 
 
@@ -22,7 +21,5 @@ class SetGeoRegion(Resource):
     @check_connection
     def post(self):
         args = self.reqparse.parse_args(strict=True)
-        config.connection.set_geo_region(region=args["region"])
-        return {
-            "geo_region_set": config.connection.api_thread._settings.geo_settings.region
-        }
+        g.CONN.set_geo_region(region=args["region"])
+        return {"geo_region_set": g.CONN.api_thread._settings.geo_settings.region}

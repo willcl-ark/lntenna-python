@@ -1,10 +1,11 @@
 #!flask/bin/python
 
 import ast
+
 import simplejson
 from flask_restful import Resource, reqparse
 
-import lntenna.server.config as config
+import lntenna.server.conn as g
 from lntenna.gotenna.utilities import check_connection
 
 
@@ -32,12 +33,10 @@ class RpcRawProxy(Resource):
     def post(self):
         args = self.reqparse.parse_args(strict=True)
         if args["args"] is "null":
-            result = simplejson.dumps(
-                getattr(config.connection.btc_proxy, args["command"])
-            )
+            result = simplejson.dumps(getattr(g.CONN.btc_proxy, args["command"]))
         else:
             args["args"] = ast.literal_eval(args["args"])
             result = simplejson.dumps(
-                getattr(config.connection.btc_proxy, args["command"])(*args["args"])
+                getattr(g.CONN.btc_proxy, args["command"])(*args["args"])
             )
         return {args["command"]: result}

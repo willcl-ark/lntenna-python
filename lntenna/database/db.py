@@ -14,10 +14,9 @@ from sqlalchemy import (
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql import or_, select
 
-from lntenna.server.config import DB_DIR
 
 home = expanduser("~")
-db_path = home + DB_DIR
+db_path = home + "/.lntenna/"
 if not os.path.exists(db_path):
     os.makedirs(db_path)
 engine = create_engine("sqlite:///{}".format(db_path + "database.db"))
