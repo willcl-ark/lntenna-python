@@ -7,6 +7,7 @@ import lntenna.server.config as config
 
 class SdkToken(Resource):
     def __init__(self):
+        self.help = """Sets the SDK token of the server's connection instance"""
         self.reqparse = reqparse.RequestParser()
         self.reqparse.add_argument(
             "sdk_token",
