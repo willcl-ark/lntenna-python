@@ -42,7 +42,7 @@ def auto_swap_verify_quote(message, cli=False):
     if cli:
         print(f"Are you happy to proceed with creating bitcoin transaction for "
               f"{amount} Bitcoin to fulfill swap request\n")
-        res = input("Enter 'y' to continue\n")
+        res = input("Enter 'y' to continue\t")
         if res.lower() != 'y':
             print("satellite message payment cancelled")
             return
@@ -68,5 +68,5 @@ def auto_swap_verify_quote(message, cli=False):
         tx_hash["hex"],
     )
 
-    print(f"Returning result from auto_swap_verify_quote(): {pformat(result)}")
+    pprint(f"Returning result from auto_swap_verify_quote(): {pformat(result)}")
     return {"swap_tx": result}
