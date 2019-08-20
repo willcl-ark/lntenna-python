@@ -113,7 +113,7 @@ class Lntenna(cmd.Cmd):
             else:
                 addr = input("Refund bitcoin address: ")
             if self.network:
-                res = input(f"Do you want to use network {self.network} from config"
+                res = input(f"Do you want to use network {self.network} from config "
                             f"file? y/n\t")
                 if res.lower() == 'y':
                     network = self.network

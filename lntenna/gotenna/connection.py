@@ -54,7 +54,8 @@ class Connection:
         self.gid = (None,)
         self.geo_region = None
         self.events = Events()
-        self.btc = btc.BitcoinProxy()
+        self.service_url = None
+        self.btc = btc.AuthServiceProxy()
         self.swap_payment_hash = None
         self.swap_preimage = None
         self.gateway = 0

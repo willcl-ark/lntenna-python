@@ -1,1 +1,1 @@
-from lntenna.bitcoin.rpc import BitcoinProxy, SATOSHIS
+from lntenna.bitcoin.authproxy import AuthServiceProxy, SATOSHIS

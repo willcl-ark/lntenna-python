@@ -16,7 +16,6 @@ flask-httpauth = "*"
 lntenna-python = {editable = true,path = "."}
 requests = "*"
 sqlalchemy = "*"
-python-bitcoinlib = "*"
 simplejson = "*"
 pyzmq = "*"
 base58 = "*"
