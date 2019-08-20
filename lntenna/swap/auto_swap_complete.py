@@ -5,14 +5,14 @@ from pprint import pformat
 from submarine_api import broadcast_tx
 
 import lntenna.database as db
-from lntenna.bitcoin import BitcoinProxy
+from lntenna.bitcoin import AuthServiceProxy
 from lntenna.server.config import CONFIG
 from lntenna.swap.check_swap import check_swap
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
-proxy = BitcoinProxy().raw_proxy
+proxy = AuthServiceProxy()
 
 
 def broadcast_transaction(uuid, tx_hex):

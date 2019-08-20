@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "b347b87b6fe073566814b9616a6db1b94a0b019a3180efd6a94e4120ab9d0acb"
+            "sha256": "34a5ddd7825a357e409d2c71d1197e9027e263e9f48a57368f051c97f860c5e5"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -236,14 +236,6 @@
                 "sha256:e0770fadba80c31013896c7e6ef703f72e7834965954a78e71a3049488d4d7d8"
             ],
             "version": "==3.4"
-        },
-        "python-bitcoinlib": {
-            "hashes": [
-                "sha256:0fe7de6c083e12479eb12d3764ece83e5c73b1c48e806009ee1a1aa02da098cf",
-                "sha256:4c5ab6d6937086b2964a97182ca04d9a7ecfe9295ab9520f58ac13a1f54e9183"
-            ],
-            "index": "pypi",
-            "version": "==0.10.1"
         },
         "pytz": {
             "hashes": [

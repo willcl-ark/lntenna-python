@@ -2,7 +2,7 @@ import logging
 from binascii import hexlify
 from pprint import pformat, pprint
 
-from lntenna.bitcoin import BitcoinProxy, SATOSHIS
+from lntenna.bitcoin import AuthServiceProxy, SATOSHIS
 from lntenna.database import add_verify_quote
 from lntenna.lightning.lnaddr import lndecode
 from lntenna.server.config import CONFIG
@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 def proxy():
     """Return a fresh proxy instance for each call
     """
-    return BitcoinProxy().raw_proxy
+    return AuthServiceProxy()
 
 
 def auto_swap_verify_quote(message, cli=False):
