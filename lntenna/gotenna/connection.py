@@ -55,20 +55,12 @@ class Connection:
         self.geo_region = None
         self.events = Events()
         self.service_url = None
-        # self.setup_service_url()
         self.btc = btc.AuthServiceProxy()
         self.swap_payment_hash = None
         self.swap_preimage = None
         self.gateway = 0
         self.jumbo_thread = threading.Thread()
         self.cli = False
-
-    # def setup_service_url(self):
-    #     url = f"http://{CONFIG['bitcoin']['RPC_USER']}:"
-    #     url += f"{CONFIG['bitcoin']['RPC_PASSWORD']}@"
-    #     url += f"{CONFIG['bitcoin']['RPC_HOST']}:"
-    #     url += f"{CONFIG['bitcoin']['RPC_PORT']}"
-    #     self.service_url = url
 
     def reset_connection(self):
         if self.api_thread:
