@@ -1,6 +1,6 @@
 import logging
 from binascii import hexlify
-from pprint import pformat
+from pprint import pformat, pprint
 
 from lntenna.bitcoin import BitcoinProxy, SATOSHIS
 from lntenna.database import add_verify_quote
@@ -18,11 +18,12 @@ def proxy():
     return BitcoinProxy().raw_proxy
 
 
-def auto_swap_verify_quote(message):
+def auto_swap_verify_quote(message, cli=False):
     result = {}
     # decode the invoice, raise value error if signature mismatch
     decoded_inv = lndecode(message["inv"])
-    print(f"Decoded invoice: {decoded_inv}")
+    pprint(f"Decoded invoice: {decoded_inv}")
+    pprint(f"Redeem script: {message['r_s']}")
 
     # Check the Pubkey from the invoice matches hardcoded keys
     print("Check decoded pubkey matches known blockstream pubkeys")
@@ -36,8 +37,17 @@ def auto_swap_verify_quote(message):
     assert compare_redeemscript_invoice(payment_hash, message["r_s"])
     print("Redeem script and lightning invoice match")
 
-    # create the bitcoin transaction
+    # calculate amount the bitcoin transaction
     amount = f'{message["amt"] / SATOSHIS:.8f}'
+    if cli:
+        print(f"Are you happy to proceed with creating bitcoin transaction for "
+              f"{amount} Bitcoin to fulfill swap request\n")
+        res = input("Enter 'y' to continue\n")
+        if res.lower() != 'y':
+            print("satellite message payment cancelled")
+            return
+
+    # setup the transaction
     result["tx_hash"] = proxy().sendtoaddress(message["addr"], amount)
     tx_hash = proxy().gettransaction(result["tx_hash"])
     result["tx_hex"] = tx_hash["hex"]

@@ -1,6 +1,7 @@
 import ast
 import logging
 import time
+from pprint import pprint
 
 import requests
 import simplejson as json
@@ -74,6 +75,17 @@ def check_connection(func):
         return result
 
     return exists
+
+
+def cli(func):
+    def if_cli(*args, **kwargs):
+        result = func(*args, **kwargs)
+        if args[0].cli:
+            if result is not None:
+                pprint(result)
+        return result
+
+    return if_cli
 
 
 def prepare_api_request(request):

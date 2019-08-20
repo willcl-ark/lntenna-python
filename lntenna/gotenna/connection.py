@@ -2,6 +2,7 @@ import logging
 import threading
 import traceback
 import types
+from pprint import pprint
 from time import sleep, time
 
 import goTenna
@@ -12,7 +13,7 @@ import lntenna.bitcoin as btc
 from lntenna.api import MSG_CODES
 from lntenna.database import init as init_db, swap_lookup_payment_hash
 from lntenna.gotenna.events import Events
-from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment
+from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment, cli
 from lntenna.server.config import CONFIG
 from lntenna.swap import (
     auto_swap_create,
@@ -58,17 +59,19 @@ class Connection:
         self.swap_preimage = None
         self.gateway = 0
         self.jumbo_thread = threading.Thread()
+        self.cli = False
 
     def reset_connection(self):
         if self.api_thread:
             self.api_thread.join()
         self.__init__()
 
+    @cli
     def sdk_token(self, sdk_token):
         """set sdk_token for the connection
         """
         if self.api_thread:
-            print("To change SDK tokens, restart the sample app.")
+            self.log("To change SDK tokens, restart the sample app.")
             return
         try:
             if not SPI_CONNECTION:
@@ -91,11 +94,12 @@ class Connection:
                 )
             self.api_thread.start()
         except ValueError:
-            print(
+            self.log(
                 "SDK token {} is not valid. Please enter a valid SDK token.".format(
                     sdk_token
                 )
             )
+        return {"SDK_TOKEN": self.api_thread.sdk_token.decode("utf-8")}
 
     def event_callback(self, evt):
         """ The event callback that will store even messages from the API.
@@ -115,26 +119,26 @@ class Connection:
             self.events.device_present.put(evt)
             # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
-                print("Device physically connected")
+                self.log("Device physically connected")
             else:
-                print("Device physically connected, configure to continue")
+                self.log("Device physically connected, configure to continue")
         elif evt.event_type == goTenna.driver.Event.CONNECT:
             self.events.connect.put(evt)
             # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
-                print("Device reconnected! Firmware update complete!")
+                self.log("Device reconnected! Firmware update complete!")
                 self._awaiting_disconnect_after_fw_update[0] = False
             else:
-                print("Connected!")
+                self.log("Connected!")
         elif evt.event_type == goTenna.driver.Event.DISCONNECT:
             self.events.disconnect.put(evt)
             # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 # Do not reset configuration so that the device will reconnect on its
                 # own
-                print("Firmware update: Device disconnected, awaiting reconnect")
+                self.log("Firmware update: Device disconnected, awaiting reconnect")
             else:
-                print("Disconnected! {}".format(evt))
+                self.log("Disconnected! {}".format(evt))
                 # We reset the configuration here so that if the user plugs in a
                 # different device it is not immediately reconfigured with new and
                 # incorrect data
@@ -152,7 +156,7 @@ class Connection:
                 if member.gid_val == self.api_thread.gid.gid_val:
                     index = idx
                     break
-            print(
+            self.log(
                 "Added to group {}: You are member {}".format(
                     evt.group.gid.gid_val, index
                 )
@@ -190,47 +194,50 @@ class Connection:
             method = self.in_flight_events.pop(correlation_id.bytes, "Method call")
             if success:
                 if results:
-                    print("{} succeeded: {}".format(method, results))
-                    self.events.callback.put(
-                        {"method": method, "results": results, "status": "Success"}
-                    )
+                    result = {"method": method, "results": results, "status": "Success"}
+                    self.events.callback.put(result)
+                    return result
                 else:
-                    print("{} succeeded!".format(method))
-                    self.events.callback.put({"method": method, "status": "success"})
+                    # print("{} succeeded!".format(method))
+                    result = {"method": method, "status": "success"}
+                    self.events.callback.put(result)
+                    return result
             elif error:
                 if not captured_error_handler[0]:
                     captured_error_handler[0] = default_error_handler
-                print(
-                    "{} failed: {}".format(method, captured_error_handler[0](details))
-                )
-                self.events.callback.put(
-                    {
+                    result = {
                         "method": method,
                         "error_details": captured_error_handler[0](details),
                         "status": "failed",
                     }
-                )
+                    self.events.callback.put(result)
+                    return result
 
         return callback
 
+    @cli
     def set_gid(self, gid):
         """ Create a new profile (if it does not already exist) with default settings.
         GID should be a 15-digit numerical GID.
         """
         if self.api_thread.connected:
-            print("Must not be connected when setting GID")
+            self.log("Must not be connected when setting GID")
             return
         (_gid, _) = self._parse_gid(gid, goTenna.settings.GID.PRIVATE)
         if not _gid:
             return
         self.api_thread.set_gid(_gid)
         self._settings.gid_settings = gid
+        return {"GID": self.api_thread.gid.gid_val}
 
+    @cli
     def send_broadcast(self, message):
         """ Send a broadcast message
         """
         if not self.api_thread.connected:
-            print("No device connected")
+            return {
+                "send_broadcast": {"status": "failed", "reason": "No device connected"}
+            }
         else:
 
             def error_handler(details):
@@ -240,8 +247,18 @@ class Connection:
                     goTenna.constants.ErrorCodes.TIMEOUT,
                     goTenna.constants.ErrorCodes.OSERROR,
                 ]:
-                    return "Message may not have been sent: USB connection disrupted"
-                return "Error sending message: {}".format(details)
+                    return {
+                        "send_broadcast": {
+                            "status": "failed",
+                            "reason": "message may not have been sent: USB connection disrupted",
+                        }
+                    }
+                return {
+                    "send_broadcast": {
+                        "status": "failed",
+                        "reason": f"error sending message: {details}",
+                    }
+                }
 
             try:
                 method_callback = self.build_callback(error_handler)
@@ -262,8 +279,19 @@ class Connection:
                     corr_id.bytes
                 ] = "Broadcast message: {} ({} bytes)\n".format(message, len(message))
             except ValueError:
-                print("Message too long!")
-                return
+                return {
+                    "send_broadcast": {
+                        "status": "failed",
+                        "reason": "message too long!"
+                    }
+                }
+            return {
+                "send_broadcast": {
+                    "status": "complete",
+                    "message": message,
+                    "size(B)": len(message),
+                }
+            }
 
     @staticmethod
     def _parse_gid(__gid, gid_type, print_message=True):
@@ -346,6 +374,7 @@ class Connection:
         # for msg in msg_segments:
         #     self.send_private(gid, msg)
 
+    @cli
     def get_device_type(self):
         return self.api_thread.device_type
 
@@ -355,21 +384,23 @@ class Connection:
         """
         return goTenna.constants.GEO_REGION.DICT
 
+    @cli
     def set_geo_region(self, region):
         """ Configure the frequencies the device will use.
         Allowed region displayed with list_geo_region.
         """
         if self.get_device_type() == "pro":
-            print("This configuration cannot be done for Pro devices.")
+            self.log("This configuration cannot be done for Pro devices.")
             return
-        print("region={}".format(region))
         if not goTenna.constants.GEO_REGION.valid(region):
-            print("Invalid region setting {}".format(region))
+            self.log("Invalid region setting {}".format(region))
             return
         self._set_geo_region = True
         self._settings.geo_settings.region = region
         self.api_thread.set_geo_settings(self._settings.geo_settings)
+        return {"GEO_REGION": self.api_thread.geo_settings.region}
 
+    @cli
     def can_connect(self):
         """ Return whether a goTenna can connect.
         For a goTenna to connect, a GID and RF settings must be configured.
@@ -397,18 +428,19 @@ class Connection:
             result["MESH - Geo region"] = "Not Set"
         return result
 
+    @cli
     def get_system_info(self):
         """ Get system information.
         """
         if not self.api_thread.connected:
             return "Device must be connected"
-        return self.api_thread.system_info
+        return {"SYSTEM_INFO": self.api_thread.system_info}
 
     def handle_jumbo_message(self, message):
         payload = message.payload.message
         if payload.startswith("sm/"):
             # TODO: this cuts out all sender and receiver info -- ADD SENDER GID
-            logger.debug(f"Received jumbo message fragment")
+            self.log(f"Received jumbo message fragment")
             prefix, seq, length, msg = payload.split("/")
             if self.jumbo_thread.is_alive():
                 pass
@@ -446,19 +478,19 @@ class Connection:
             payload = json.loads(payload)
             for k, v in payload.items():
                 if k in MSG_CODES:
-                    logger.debug(f"Handling a {k} message")
+                    self.log(f"Handling a {k} message")
                     # make sure all db tables needed exist
                     # TODO: move this to more appropriate place
                     init_db()
                     # pass the full request dict through to parse message type later
                     return self.handle_known_msg(payload)
                 else:
-                    logger.debug(
+                    self.log(
                         f"Received json-encoded message but could not automatically "
                         f"handle:\n{payload}"
                     )
         except Exception as e:
-            logger.debug(
+            self.log(
                 f"Raised exception when trying to handle message:\n"
                 f"Payload: {payload}\n"
                 f"Exception: {e}"
@@ -467,43 +499,46 @@ class Connection:
     def handle_known_msg(self, message):
         for k, v in message.items():
             if k == "api_request":
-                logger.debug("Processing a api_request message")
+                self.log("Processing a api_request message")
                 # pass the request dict only through
                 prepped = prepare_api_request(v)
-                logger.debug("Prepared an api request")
+                self.log("Prepared an api request")
                 with requests.Session() as s:
                     return s.send(prepped, timeout=30)
             if k == "sat_req":
                 # do an automatic blocksat and swap setup
-                logger.debug("Processing a sat_req message")
+                self.log("Processing a sat_req message")
                 sat_fill = auto_swap_create(v)
                 self.send_jumbo(json.dumps(sat_fill))
             if k == "sat_fill":
-                logger.debug("Processing a sat_fill message")
+                self.log("Processing a sat_fill message")
                 print("Received a quote response")
-                swap_tx = auto_swap_verify_quote(v)
+                if self.cli:
+                    swap_tx = auto_swap_verify_quote(v, True)
+                else:
+                    swap_tx = auto_swap_verify_quote(v)
                 self.send_jumbo(json.dumps(swap_tx))
             if k == "swap_tx":
-                logger.debug("Processing a swap_tx message")
+                self.log("Processing a swap_tx message")
                 swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"])
                 self.send_broadcast(json.dumps(swap_complete))
             if k == "swap_complete":
-                logger.debug("Processing a swap_complete message")
+                self.log("Processing a swap_complete message")
                 try:
                     # msg = json.loads(v)
                     payment_hash = swap_lookup_payment_hash(v["uuid"])
                     if auto_swap_verify_preimage(
                         v["uuid"], v["preimage"], payment_hash
                     ):
-                        logger.debug(v)
+                        self.log(v)
                 except Exception:
-                    logger.debug(v)
+                    self.log(v)
 
     def monitor_jumbo_msgs(self, timeout=30):
-        logger.debug("Starting jumbo message monitor thread")
+        self.log("Starting jumbo message monitor thread")
         start = time()
         while True and time() < start + timeout:
-            logger.debug(
+            self.log(
                 f"received: {len(self.events.jumbo)} of {self.events.jumbo_len} "
                 f"jumbo messages"
             )
@@ -517,10 +552,16 @@ class Connection:
                 # reconstruct the jumbo message
                 jumbo_message.payload.message = de_segment(self.events.jumbo)
                 # send it back through handle_message
-                logger.debug(f"Jumbo message payload reconstituted")
+                self.log(f"Jumbo message payload reconstituted")
                 self.handle_message(jumbo_message)
                 break
             sleep(5)
         # reset jumbo events after timeout
         self.events.init_jumbo()
         return
+
+    def log(self, message):
+        if self.cli:
+            pprint(message)
+        else:
+            logger.debug(message)

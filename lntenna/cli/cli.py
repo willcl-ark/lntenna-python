@@ -15,6 +15,7 @@ class Lntenna(cmd.Cmd):
 
     def __init__(self, conn):
         self.conn = conn
+        self.conn.cli = True
         self.sdk_token = None
         self.GID = None
         self.geo_region = None
@@ -22,9 +23,13 @@ class Lntenna(cmd.Cmd):
         super().__init__()
         self.check_for_config()
 
+    def emptyline(self):
+        print("\n")
+
     def check_for_config(self):
         try:
             from lntenna.server.config import CONFIG
+
             if CONFIG["gotenna"]:
                 print("Config file found, loading SDK_TOKEN, GID and GEO_REGION")
                 self.conn.sdk_token(CONFIG["gotenna"]["SDK_TOKEN"])
@@ -40,7 +45,7 @@ class Lntenna(cmd.Cmd):
         :arg sdk_token
         """
         self.conn.sdk_token(arg)
-        print(f"SDK token set: {self.conn.api_thread.sdk_token.decode('utf-8')}")
+        # print(f"SDK token set: {self.conn.api_thread.sdk_token.decode('utf-8')}")
 
     def do_set_gid(self, arg):
         """Set GID for the GoTenna device
@@ -48,7 +53,6 @@ class Lntenna(cmd.Cmd):
         """
         arg = int(arg)
         self.conn.set_gid(arg)
-        print(f"GID set: {self.conn.api_thread.gid.gid_val}")
 
     def do_set_geo_region(self, arg):
         """Set geo_region for the GoTenna device:
@@ -56,7 +60,23 @@ class Lntenna(cmd.Cmd):
         """
         arg = int(arg)
         self.conn.set_geo_region(arg)
-        print(f"geo_region set: {self.conn.api_thread.geo_settings.region}")
+        # print(f"geo_region set: {self.conn.api_thread.geo_settings.region}")
+
+    def do_can_connect(self, arg):
+        """Return whether a GoTenna can connect
+        For a GoTenna to connect, a GID and RF setting must be configured
+        """
+        self.conn.can_connect()
+
+    def do_get_device_type(self, arg):
+        """Return the device type
+        """
+        self.conn.get_device_type()
+
+    def do_get_system_info(self, arg):
+        """Return the system info
+        """
+        self.conn.get_system_info()
 
     def do_send_broadcast(self, arg):
         """Send a broadcast message to all nearby GoTenna devices
@@ -74,29 +94,16 @@ class Lntenna(cmd.Cmd):
         You will be prompted for further details
         Network must be either 'mainnet' or 'testnet'
         """
-        if arg == '':
+        if arg == "":
             message = input("Message: ")
             addr = input("Refund bitcoin address: ")
             network = input("Network:")
             assert network == "mainnet" or "testnet"
             n = "m" if network is "mainnet" else "t"
 
-            req = {"sat_req":
-                       {"m": message,
-                        "a": addr,
-                        "n": n
-                        }
-                   }
+            req = {"sat_req": {"m": message, "a": addr, "n": n}}
 
             self.conn.send_broadcast(json.dumps(req))
-
-
-    @staticmethod
-    def do_hello(s):
-        """Say hello to you"""
-        if s == "":
-            s = input("Your name please: ")
-        print(f"Hello, {s}")
 
     @staticmethod
     def do_exit(arg):
