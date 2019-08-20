@@ -1,8 +1,8 @@
 import hashlib
 
-from lntenna.bitcoin import BitcoinProxy
+from lntenna.bitcoin import AuthServiceProxy
 
-proxy = BitcoinProxy().raw_proxy
+proxy = AuthServiceProxy()
 
 
 def compare_redeemscript_invoice(payment_hash: str, redeem_script: str):
