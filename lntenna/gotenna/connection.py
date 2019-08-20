@@ -178,8 +178,8 @@ class Connection:
                 goTenna.constants.ErrorCodes.OSERROR,
                 goTenna.constants.ErrorCodes.EXCEPTION,
             ]:
-                return "USB connection disrupted"
-            return "Error: {}: {}".format(details["code"], details["msg"])
+                self.log("USB connection disrupted")
+            self.log(f"Error: {details['code']}: {details['msg']}")
 
         # Define a second function here so it implicitly captures self
         captured_error_handler = [error_handler]
@@ -196,12 +196,11 @@ class Connection:
                 if results:
                     result = {"method": method, "results": results, "status": "Success"}
                     self.events.callback.put(result)
-                    return result
+                    self.log(result)
                 else:
-                    # print("{} succeeded!".format(method))
                     result = {"method": method, "status": "success"}
                     self.events.callback.put(result)
-                    return result
+                    self.log(result)
             elif error:
                 if not captured_error_handler[0]:
                     captured_error_handler[0] = default_error_handler
@@ -211,7 +210,7 @@ class Connection:
                         "status": "failed",
                     }
                     self.events.callback.put(result)
-                    return result
+                    self.log(result)
 
         return callback
 
@@ -235,9 +234,14 @@ class Connection:
         """ Send a broadcast message
         """
         if not self.api_thread.connected:
-            return {
-                "send_broadcast": {"status": "failed", "reason": "No device connected"}
-            }
+            self.log(
+                {
+                    "send_broadcast": {
+                        "status": "failed",
+                        "reason": "No device connected",
+                    }
+                }
+            )
         else:
 
             def error_handler(details):
@@ -247,26 +251,28 @@ class Connection:
                     goTenna.constants.ErrorCodes.TIMEOUT,
                     goTenna.constants.ErrorCodes.OSERROR,
                 ]:
-                    return {
+                    self.log(
+                        {
+                            "send_broadcast": {
+                                "status": "failed",
+                                "reason": "message may not have been sent: USB connection disrupted",
+                            }
+                        }
+                    )
+                self.log(
+                    {
                         "send_broadcast": {
                             "status": "failed",
-                            "reason": "message may not have been sent: USB connection disrupted",
+                            "reason": f"error sending message: {details}",
                         }
                     }
-                return {
-                    "send_broadcast": {
-                        "status": "failed",
-                        "reason": f"error sending message: {details}",
-                    }
-                }
+                )
 
             try:
                 method_callback = self.build_callback(error_handler)
                 payload = goTenna.payload.TextPayload(message)
-                print(
-                    "payload valid = {}, message size = {}\n".format(
-                        payload.valid, len(message)
-                    )
+                self.log(
+                    f"payload valid = {payload.valid}, message size = {len(message)}\n"
                 )
 
                 corr_id = self.api_thread.send_broadcast(payload, method_callback)
@@ -277,21 +283,25 @@ class Connection:
 
                 self.in_flight_events[
                     corr_id.bytes
-                ] = "Broadcast message: {} ({} bytes)\n".format(message, len(message))
+                ] = f"Broadcast message: {message} ({len(message)} bytes)\n"
             except ValueError:
-                return {
+                self.log(
+                    {
+                        "send_broadcast": {
+                            "status": "failed",
+                            "reason": "message too long!",
+                        }
+                    }
+                )
+            self.log(
+                {
                     "send_broadcast": {
-                        "status": "failed",
-                        "reason": "message too long!"
+                        "status": "complete",
+                        "message": message,
+                        "size(B)": len(message),
                     }
                 }
-            return {
-                "send_broadcast": {
-                    "status": "complete",
-                    "message": message,
-                    "size(B)": len(message),
-                }
-            }
+            )
 
     @staticmethod
     def _parse_gid(__gid, gid_type, print_message=True):
@@ -356,14 +366,14 @@ class Connection:
 
     def send_jumbo(self, message, segment_size=210, private=False, gid=None):
         msg_segments = segment(message, segment_size)
-        logger.debug(f"Created segmented message with {len(msg_segments)} segments")
+        self.log(f"Created segmented message with {len(msg_segments)} segments")
         if not private:
             i = 0
             for msg in msg_segments:
                 i += 1
                 sleep(2)
                 self.send_broadcast(msg)
-                logger.debug(f"Sent message segment {i} of {len(msg_segments)}")
+                self.log(f"Sent message segment {i} of {len(msg_segments)}")
         return
         # disabled for now as requires custom message parsing
         # TODO: enable private messages here
@@ -374,9 +384,10 @@ class Connection:
         # for msg in msg_segments:
         #     self.send_private(gid, msg)
 
-    @cli
     def get_device_type(self):
-        return self.api_thread.device_type
+        device = self.api_thread.device_type
+        self.log(device)
+        return device
 
     @staticmethod
     def list_geo_region():
@@ -398,9 +409,8 @@ class Connection:
         self._set_geo_region = True
         self._settings.geo_settings.region = region
         self.api_thread.set_geo_settings(self._settings.geo_settings)
-        return {"GEO_REGION": self.api_thread.geo_settings.region}
+        self.log({"GEO_REGION": self.api_thread.geo_settings.region})
 
-    @cli
     def can_connect(self):
         """ Return whether a goTenna can connect.
         For a goTenna to connect, a GID and RF settings must be configured.
@@ -426,15 +436,18 @@ class Connection:
             result["MESH - Geo region"] = "OK"
         else:
             result["MESH - Geo region"] = "Not Set"
+        self.log(result)
         return result
 
-    @cli
     def get_system_info(self):
         """ Get system information.
         """
         if not self.api_thread.connected:
-            return "Device must be connected"
-        return {"SYSTEM_INFO": self.api_thread.system_info}
+            self.log("Device must be connected")
+            return
+        info = {"SYSTEM_INFO": self.api_thread.system_info}
+        self.log(info)
+        return info
 
     def handle_jumbo_message(self, message):
         payload = message.payload.message
