@@ -20,6 +20,8 @@ class Lntenna(cmd.Cmd):
         self.GID = None
         self.geo_region = None
         self.config = False
+        self.refund_address = None
+        self.network = None
         super().__init__()
         self.check_for_config()
 
@@ -30,11 +32,18 @@ class Lntenna(cmd.Cmd):
         try:
             from lntenna.server.config import CONFIG
 
-            if CONFIG["gotenna"]:
-                print("Config file found, loading SDK_TOKEN, GID and GEO_REGION")
-                self.conn.sdk_token(CONFIG["gotenna"]["SDK_TOKEN"])
-                self.conn.set_gid(int(CONFIG["gotenna"]["GID"]))
-                self.conn.set_geo_region(int(CONFIG["gotenna"]["GEO_REGION"]))
+            if CONFIG["gotenna"] or CONFIG["bitcoin"]:
+                print("Config file found, loading values")
+                if CONFIG["gotenna"]["SDK_TOKEN"]:
+                    self.conn.sdk_token(CONFIG["gotenna"]["SDK_TOKEN"])
+                if CONFIG["gotenna"]["GID"]:
+                    self.conn.set_gid(int(CONFIG["gotenna"]["GID"]))
+                if CONFIG["gotenna"]["GEO_REGION"]:
+                    self.conn.set_geo_region(int(CONFIG["gotenna"]["GEO_REGION"]))
+                if CONFIG["bitcoin"]["BTC_NETWORK"]:
+                    self.network = CONFIG["bitcoin"]["BTC_NETWORK"]
+                if CONFIG["bitcoin"]["REFUND_ADDR"]:
+                    self.refund_address = CONFIG["bitcoin"]["REFUND_ADDR"]
                 self.config = True
                 print("Config values set successfully")
         except Exception:
@@ -91,19 +100,32 @@ class Lntenna(cmd.Cmd):
 
     def do_send_sat_msg(self, arg):
         """Send a message via the Blockstream Blocksat
-        You will be prompted for further details
-        Network must be either 'mainnet' or 'testnet'
+        You will be prompted for additional details
+        Network must be either exactly 'mainnet' or 'testnet'
         """
         if arg == "":
             message = input("Message: ")
-            addr = input("Refund bitcoin address: ")
-            network = input("Network:")
-            assert network == "mainnet" or "testnet"
-            n = "m" if network is "mainnet" else "t"
+            if self.refund_address:
+                res = input(f"Do you want to use bitcoin address "
+                            f"{self.refund_address} from config file? y/n\t")
+                if res.lower() == 'y':
+                    addr = self.refund_address
+            else:
+                addr = input("Refund bitcoin address: ")
+            if self.network:
+                res = input(f"Do you want to use network {self.network} from config"
+                            f"file? y/n\t")
+                if res.lower() == 'y':
+                    network = self.network
+            else:
+                network = input("Network:")
+            assert network.lower() == "mainnet" or "testnet"
+            n = "m" if network.lower() is "mainnet" else "t"
 
             req = {"sat_req": {"m": message, "a": addr, "n": n}}
 
             self.conn.send_broadcast(json.dumps(req))
+
 
     @staticmethod
     def do_exit(arg):
