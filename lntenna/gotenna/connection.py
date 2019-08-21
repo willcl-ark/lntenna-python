@@ -98,7 +98,7 @@ class Connection:
             self.log(
                 f"SDK token {sdk_token} is not valid. Please enter a valid SDK token."
             )
-        return {"SDK_TOKEN": self.api_thread.sdk_token.decode("utf-8")}
+        self.log(f"SDK_TOKEN: {self.api_thread.sdk_token.decode('utf-8')}")
 
     def event_callback(self, evt):
         """ The event callback that will store even messages from the API.
@@ -210,7 +210,6 @@ class Connection:
 
         return callback
 
-    @cli
     def set_gid(self, gid):
         """ Create a new profile (if it does not already exist) with default settings.
         GID should be a 15-digit numerical GID.
@@ -223,7 +222,7 @@ class Connection:
             return
         self.api_thread.set_gid(_gid)
         self._settings.gid_settings = gid
-        return {"GID": self.api_thread.gid.gid_val}
+        self.log(f"GID: {self.api_thread.gid.gid_val}")
 
     def send_broadcast(self, message):
         """ Send a broadcast message
@@ -403,7 +402,7 @@ class Connection:
         self._set_geo_region = True
         self._settings.geo_settings.region = region
         self.api_thread.set_geo_settings(self._settings.geo_settings)
-        self.log({"GEO_REGION": self.api_thread.geo_settings.region})
+        self.log(f"GEO_REGION: {self.api_thread.geo_settings.region}")
 
     def can_connect(self):
         """ Return whether a goTenna can connect.
