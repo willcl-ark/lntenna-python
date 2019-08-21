@@ -208,7 +208,7 @@ def lookup_swap_details(uuid):
     return conn.execute(s).fetchone().values()
 
 
-def add_sat_request(message, refund_addr, network, uuid):
+def mesh_add_sat_request(message, refund_addr, network, uuid):
     with engine.connect() as conn:
         ins = mesh.insert()
         try:
@@ -223,15 +223,14 @@ def add_sat_request(message, refund_addr, network, uuid):
             raise e
 
 
-def add_verify_quote(
-    uuid, inv, amt, addr, r_s, pubkey, payment_hash, tx_hash, tx_hex,
+def mesh_add_verify_quote(
+    uuid, inv, amt, addr, r_s, pubkey, payment_hash, tx_hash, tx_hex
 ):
     with engine.connect() as conn:
-        ins = mesh.insert()
-        try:
-            conn.execute(
-                ins,
-                uuid=uuid,
+        up = (
+            mesh.update()
+            .where(mesh.c.uuid == uuid)
+            .values(
                 destination_public_key=pubkey,
                 invoice=inv,
                 payment_hash=payment_hash,
@@ -242,6 +241,9 @@ def add_verify_quote(
                 tx_hex=tx_hex,
                 swap_complete=False,
             )
+        )
+        try:
+            conn.execute(up)
         except IntegrityError as e:
             raise e
 
@@ -268,6 +270,12 @@ def swap_add_preimage(uuid, preimage):
 def cli_lookup_swap_tx(uuid):
     conn = engine.connect()
     s = select([mesh.c.tx_hash, mesh.c.tx_hex]).where(mesh.c.uuid == uuid)
+    return conn.execute(s).fetchone().values()
+
+
+def cli_lookup_network(uuid):
+    conn = engine.connect()
+    s = select([mesh.c.network]).where(mesh.c.uuid == uuid)
     return conn.execute(s).fetchone().values()
 
 
