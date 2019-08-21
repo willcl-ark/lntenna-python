@@ -110,7 +110,7 @@ class Lntenna(cmd.Cmd):
                 res = input(
                     f"Do you want to use bitcoin address "
                     f"{self.refund_address} from config file? y/n\t"
-                )
+                ) or "y"
                 if res.lower() == "y":
                     addr = self.refund_address
             else:
@@ -119,7 +119,7 @@ class Lntenna(cmd.Cmd):
                 res = input(
                     f'Do you want to use network "{self.network}" from config'
                     f" file? y/n\t"
-                )
+                ) or "y"
                 if res.lower() == "y":
                     network = self.network
             else:

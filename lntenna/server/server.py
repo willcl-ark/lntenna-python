@@ -3,12 +3,12 @@
 """lntenna API server
 
 Usage:
-    server.py [--gateway] [--port PORT]
+    server.py [--debug] [--port PORT]
 
 Options:
     -h --help    Show this screen
-    --gateway    Whether to run in gateway mode with online connection
     --port PORT  Port to run the server on [default: 5000]
+    --debug      Run in debug mode. This will pull DEBUG_GID from config.ini for testing
 
 """
 
@@ -61,7 +61,9 @@ if __name__ == "__main__":
     arguments = docopt(__doc__)
     print(arguments)
 
-    if arguments["--gateway"]:
-        g.CONN.gateway = 1
+    if arguments["--debug"]:
+        g.CONN.sdk_token(CONFIG["gotenna"]["SDK_TOKEN"])
+        g.CONN.set_gid(int(CONFIG["gotenna"]["DEBUG_GID"]))
+        g.CONN.set_geo_region(int(CONFIG["gotenna"]["GEO_REGION"]))
     db.init()
     main(port=arguments["--port"])

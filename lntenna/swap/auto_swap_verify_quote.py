@@ -23,14 +23,14 @@ def auto_swap_verify_quote(message, cli=False):
     result = {}
     if cli:
         print("\n---------------------------------------\n\n")
-        log(f"Your lntenna UUID for this order is: {message['uuid']}", cli)
+        print(f"Your lntenna UUID for this order is: {message['uuid']}", cli)
         print(f"You can use this to re-send swap_tx message to GATEWAY and to query "
               f"status of interrupted swaps.")
         print("\n\n---------------------------------------\n")
     # decode the invoice, raise value error if signature mismatch
     decoded_inv = lndecode(message["inv"])
-    log({"Decoded invoice": decoded_inv}, cli)
-    log({"Redeem script": message["r_s"]}, cli)
+    print({"Decoded invoice": decoded_inv}, cli)
+    print({"Redeem script": message["r_s"]}, cli)
 
     # Check the Pubkey from the invoice matches hardcoded keys
     log("Checking decoded pubkey matches known blockstream pubkeys...", cli)
@@ -49,7 +49,7 @@ def auto_swap_verify_quote(message, cli=False):
     if cli:
         print(f"\nAre you happy to proceed with creating bitcoin transaction for "
               f"{amount} Bitcoin to fulfill swap request\n")
-        res = input("Enter 'y' to continue\t")
+        res = input("Enter 'y' to continue\t") or "y"
         if res.lower() != 'y':
             print("satellite message payment cancelled")
             return
