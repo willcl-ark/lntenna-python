@@ -30,20 +30,21 @@ def auto_swap_create(request, cli):
     # parse request
     message = request["m"]
     refund_addr = request["a"]
-    network = "testnet" if request["n"] is "t" else "mainnet"
+    blocksat_network = "testnet" if request["n"] == "t" else "mainnet"
+    submarine_network = "testnet" if request["n"] == "t" else "bitcoin"
     uuid = request["u"]
 
     # create blocksat order
     # TODO: Add some bid creation logic here or somewhere else...
     blocksat_order = create_order(
-        message=message, bid="10000", network=network, uuid=uuid
+        message=message, bid="10000", network=blocksat_network, uuid=uuid
     )
 
     # lookup the invoice with the swap server to ensure it's valid & payable
     assert (
         get_invoice_details(
             invoice=blocksat_order["response"]["lightning_invoice"]["payreq"],
-            network="testnet",
+            network=submarine_network,
         )
         is not None
     )
@@ -52,7 +53,7 @@ def auto_swap_create(request, cli):
     swap = get_swap_quote(
         uuid=uuid,
         invoice=blocksat_order["response"]["lightning_invoice"]["payreq"],
-        network=network,
+        network=submarine_network,
         refund_addr=refund_addr,
     )
 

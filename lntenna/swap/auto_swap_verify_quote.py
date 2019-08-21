@@ -3,6 +3,12 @@ from binascii import hexlify
 from pprint import pformat, pprint
 
 from lntenna.bitcoin import AuthServiceProxy, SATOSHIS
+
+try:
+    from lntenna.server.bitcoind_password import BITCOIND_PW
+except ModuleNotFoundError:
+    pass
+
 from lntenna.database import mesh_add_verify_quote, lookup_network
 from lntenna.gotenna.utilities import log
 from lntenna.lightning.lnaddr import lndecode
@@ -12,11 +18,7 @@ from lntenna.swap.decode_redeemscript import compare_redeemscript_invoice
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
-
-def proxy():
-    """Return a fresh proxy instance for each call
-    """
-    return AuthServiceProxy()
+proxy = AuthServiceProxy()
 
 
 def auto_swap_verify_quote(message, cli=False):
@@ -65,8 +67,15 @@ def auto_swap_verify_quote(message, cli=False):
             return
 
     # setup the transaction
-    result["tx_hash"] = proxy().sendtoaddress(message["ad"], amount)
-    tx_hash = proxy().gettransaction(result["tx_hash"])
+    try:
+        result["tx_hash"] = proxy.sendtoaddress(message["ad"], amount)
+    except Exception:
+        if BITCOIND_PW:
+            proxy.walletpassphrase(BITCOIND_PW, 60)
+            result["tx_hash"] = proxy.sendtoaddress(message["ad"], amount)
+            proxy.walletlock()
+
+    tx_hash = proxy.gettransaction(result["tx_hash"])
     result["tx_hex"] = tx_hash["hex"]
     # TODO: for separate machines should change to getrawtransaction as per below
     # result["tx_hex"] = proxy.getrawtransaction(result["tx_hash"])

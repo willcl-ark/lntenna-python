@@ -1,5 +1,6 @@
 import lntenna.database as db
 from lntenna.bitcoin import AuthServiceProxy, SATOSHIS
+
 try:
     from lntenna.server.bitcoind_password import BITCOIND_PW
 except ModuleNotFoundError:
