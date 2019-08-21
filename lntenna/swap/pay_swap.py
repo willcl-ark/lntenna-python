@@ -1,6 +1,9 @@
 import lntenna.database as db
 from lntenna.bitcoin import AuthServiceProxy, SATOSHIS
-from lntenna.server.bitcoind_password import BITCOIND_PW
+try:
+    from lntenna.server.bitcoind_password import BITCOIND_PW
+except ModuleNotFoundError:
+    pass
 from lntenna.swap.utilities import try_json
 
 
@@ -15,9 +18,10 @@ def pay_swap(uuid: str):
     try:
         txid = proxy.sendtoaddress(swap_p2sh_address, swap_amount_bitcoin)
     except Exception:
-        proxy.walletpassphrase(BITCOIND_PW, 60)
-        txid = proxy.sendtoaddress(swap_p2sh_address, swap_amount_bitcoin)
-        proxy.walletlock()
+        if BITCOIND_PW:
+            proxy.walletpassphrase(BITCOIND_PW, 60)
+            txid = proxy.sendtoaddress(swap_p2sh_address, swap_amount_bitcoin)
+            proxy.walletlock()
 
     # add the txid to the db
     try:

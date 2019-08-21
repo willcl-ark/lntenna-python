@@ -56,8 +56,10 @@ log = logging.getLogger("BitcoinRPC")
 
 
 def service_url():
-    url = f"http://{CONFIG['bitcoin']['RPC_USER']}:"
-    url += f"{CONFIG['bitcoin']['RPC_PASSWORD']}@"
+    url = f"http://"
+    url += f"{CONFIG['bitcoin']['RPC_USER']}:"
+    url += f"{CONFIG['bitcoin']['RPC_PASSWORD']}"
+    url += f"@"
     url += f"{CONFIG['bitcoin']['RPC_HOST']}:"
     url += f"{CONFIG['bitcoin']['RPC_PORT']}"
     return url
