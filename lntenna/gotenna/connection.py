@@ -96,9 +96,7 @@ class Connection:
             self.api_thread.start()
         except ValueError:
             self.log(
-                "SDK token {} is not valid. Please enter a valid SDK token.".format(
-                    sdk_token
-                )
+                f"SDK token {sdk_token} is not valid. Please enter a valid SDK token."
             )
         return {"SDK_TOKEN": self.api_thread.sdk_token.decode("utf-8")}
 
@@ -118,14 +116,12 @@ class Connection:
                 traceback.print_exc()
         elif evt.event_type == goTenna.driver.Event.DEVICE_PRESENT:
             self.events.device_present.put(evt)
-            # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 self.log("Device physically connected")
             else:
                 self.log("Device physically connected, configure to continue")
         elif evt.event_type == goTenna.driver.Event.CONNECT:
             self.events.connect.put(evt)
-            # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 self.log("Device reconnected! Firmware update complete!")
                 self._awaiting_disconnect_after_fw_update[0] = False
@@ -133,7 +129,6 @@ class Connection:
                 self.log("Connected!")
         elif evt.event_type == goTenna.driver.Event.DISCONNECT:
             self.events.disconnect.put(evt)
-            # TODO: Incorporate logic below into smart API responses
             if self._awaiting_disconnect_after_fw_update[0]:
                 # Do not reset configuration so that the device will reconnect on its
                 # own
@@ -230,7 +225,6 @@ class Connection:
         self._settings.gid_settings = gid
         return {"GID": self.api_thread.gid.gid_val}
 
-    @cli
     def send_broadcast(self, message):
         """ Send a broadcast message
         """
@@ -396,7 +390,6 @@ class Connection:
         """
         return goTenna.constants.GEO_REGION.DICT
 
-    @cli
     def set_geo_region(self, region):
         """ Configure the frequencies the device will use.
         Allowed region displayed with list_geo_region.
@@ -507,7 +500,7 @@ class Connection:
             self.log(
                 f"Raised exception when trying to handle message:\n"
                 f"Payload: {payload}\n"
-                f"Exception: {e}"
+                f"Not a known message type."
             )
 
     def handle_known_msg(self, message):
@@ -522,19 +515,19 @@ class Connection:
             if k == "sat_req":
                 # do an automatic blocksat and swap setup
                 self.log("Processing a sat_req message")
-                sat_fill = auto_swap_create(v)
+                sat_fill = auto_swap_create(v, self.cli)
                 self.send_jumbo(json.dumps(sat_fill))
             if k == "sat_fill":
                 self.log("Processing a sat_fill message")
-                print("Received a quote response")
+                self.log("Received a quote response")
                 if self.cli:
-                    swap_tx = auto_swap_verify_quote(v, True)
+                    swap_tx = auto_swap_verify_quote(v, self.cli)
                 else:
                     swap_tx = auto_swap_verify_quote(v)
                 self.send_jumbo(json.dumps(swap_tx))
             if k == "swap_tx":
                 self.log("Processing a swap_tx message")
-                swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"])
+                swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"], self.cli)
                 self.send_broadcast(json.dumps(swap_complete))
             if k == "swap_complete":
                 self.log("Processing a swap_complete message")
@@ -542,7 +535,7 @@ class Connection:
                     # msg = json.loads(v)
                     payment_hash = swap_lookup_payment_hash(v["uuid"])
                     if auto_swap_verify_preimage(
-                        v["uuid"], v["preimage"], payment_hash
+                        v["uuid"], v["preimage"], payment_hash, self.cli
                     ):
                         self.log(v)
                 except Exception:

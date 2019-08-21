@@ -4,6 +4,7 @@ from pprint import pformat, pprint
 
 from lntenna.bitcoin import AuthServiceProxy, SATOSHIS
 from lntenna.database import add_verify_quote
+from lntenna.gotenna.utilities import log
 from lntenna.lightning.lnaddr import lndecode
 from lntenna.server.config import CONFIG
 from lntenna.swap.decode_redeemscript import compare_redeemscript_invoice
@@ -20,27 +21,33 @@ def proxy():
 
 def auto_swap_verify_quote(message, cli=False):
     result = {}
+    if cli:
+        print("\n---------------------------------------\n\n")
+        log(f"Your lntenna UUID for this order is: {message['uuid']}", cli)
+        print(f"You can use this to re-send swap_tx message to GATEWAY and to query "
+              f"status of interrupted swaps.")
+        print("\n\n---------------------------------------\n")
     # decode the invoice, raise value error if signature mismatch
     decoded_inv = lndecode(message["inv"])
-    pprint(f"Decoded invoice: {decoded_inv}")
-    pprint(f"Redeem script: {message['r_s']}")
+    log({"Decoded invoice": decoded_inv}, cli)
+    log({"Redeem script": message["r_s"]}, cli)
 
     # Check the Pubkey from the invoice matches hardcoded keys
-    print("Check decoded pubkey matches known blockstream pubkeys")
+    log("Checking decoded pubkey matches known blockstream pubkeys...", cli)
     pubkey = hexlify(decoded_inv.pubkey.serialize()).decode("utf-8")
     assert pubkey in CONFIG["blocksat_pubkeys"].values()
-    print(f"Pubkey {pubkey} successfully matched in hardcoded keys")
+    log(f"Pubkey {pubkey} successfully matched to hardcoded keys in config.ini!", cli)
 
     # check the redeem_script matches the lightning invoice payment_hash
-    print("Checking swap redeem script matches lightning invoice payment hash")
+    log("Checking swap redeem script matches lightning invoice payment hash...", cli)
     payment_hash = decoded_inv.paymenthash.hex()
     assert compare_redeemscript_invoice(payment_hash, message["r_s"])
-    print("Redeem script and lightning invoice match")
+    log("Redeem script and payment hash match", cli)
 
     # calculate amount the bitcoin transaction
     amount = f'{message["amt"] / SATOSHIS:.8f}'
     if cli:
-        print(f"Are you happy to proceed with creating bitcoin transaction for "
+        print(f"\nAre you happy to proceed with creating bitcoin transaction for "
               f"{amount} Bitcoin to fulfill swap request\n")
         res = input("Enter 'y' to continue\t")
         if res.lower() != 'y':
@@ -68,5 +75,5 @@ def auto_swap_verify_quote(message, cli=False):
         tx_hash["hex"],
     )
 
-    pprint(f"Returning result from auto_swap_verify_quote(): {pformat(result)}")
+    log(f"Returning swap tx to GATEWAY:\n{pformat(result)}", cli)
     return {"swap_tx": result}

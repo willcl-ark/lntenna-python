@@ -2,8 +2,10 @@
 
 import cmd
 import simplejson as json
+from pprint import pformat
 
 from lntenna.gotenna.connection import Connection
+from lntenna.database.db import cli_lookup_swap_tx
 
 
 class Lntenna(cmd.Cmd):
@@ -106,16 +108,20 @@ class Lntenna(cmd.Cmd):
         if arg == "":
             message = input("Message: ")
             if self.refund_address:
-                res = input(f"Do you want to use bitcoin address "
-                            f"{self.refund_address} from config file? y/n\t")
-                if res.lower() == 'y':
+                res = input(
+                    f"Do you want to use bitcoin address "
+                    f"{self.refund_address} from config file? y/n\t"
+                )
+                if res.lower() == "y":
                     addr = self.refund_address
             else:
                 addr = input("Refund bitcoin address: ")
             if self.network:
-                res = input(f"Do you want to use network {self.network} from config "
-                            f"file? y/n\t")
-                if res.lower() == 'y':
+                res = input(
+                    f'Do you want to use network "{self.network}" from config'
+                    f" file? y/n\t"
+                )
+                if res.lower() == "y":
                     network = self.network
             else:
                 network = input("Network:")
@@ -124,8 +130,28 @@ class Lntenna(cmd.Cmd):
 
             req = {"sat_req": {"m": message, "a": addr, "n": n}}
 
-            self.conn.send_broadcast(json.dumps(req))
+            # send it via regular broadcast or jumbo depending on size
+            if len(message) < 200:
+                try:
+                    self.conn.send_broadcast(json.dumps(req))
+                except Exception as e:
+                    print(
+                        f"send_broadcast raised exception {e}, retrying with "
+                        f"send_jumbo"
+                    )
+                    self.conn.send_jumbo(json.dumps(req))
+            else:
+                self.conn.send_jumbo(json.dumps(req))
 
+    def do_resend_swap_tx(self, arg):
+        """Resend the "swap_tx" message to the gateway for the specified UUID
+        :arg UUID
+        """
+        uuid = str(arg)
+        tx_hash, tx_hex = cli_lookup_swap_tx(uuid)
+        swap_tx_msg = {"swap_tx": {"tx_hash": tx_hash, "tx_hex": tx_hex, "uuid": uuid}}
+        print(f"Successfully looked up swap in the db:\n{pformat(swap_tx_msg)}")
+        self.conn.send_jumbo(swap_tx_msg)
 
     @staticmethod
     def do_exit(arg):

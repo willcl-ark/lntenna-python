@@ -1,6 +1,7 @@
 import logging
 from pprint import pformat
 
+from lntenna.gotenna.utilities import log
 from lntenna.server.config import CONFIG
 from lntenna.swap.create_order import create_order
 from lntenna.swap.get_invoice_details import get_invoice_details
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
 
-def auto_swap_create(request):
+def auto_swap_create(request, cli):
     """Takes a dict as argument of the following structure, with arguments
     "m" - message,
     "a" - refund address
@@ -60,6 +61,6 @@ def auto_swap_create(request):
         }
     }
 
-    logger.debug(f"Auto_swap result: {pformat(result)}")
+    log(f"Auto_swap result: \n{pformat(result)}", cli)
 
     return result

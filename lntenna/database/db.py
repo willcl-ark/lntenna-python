@@ -244,3 +244,9 @@ def swap_add_preimage(uuid, preimage):
         conn.execute(up)
     except IntegrityError as e:
         raise e
+
+
+def cli_lookup_swap_tx(uuid):
+    conn = engine.connect()
+    s = select([mesh.c.tx_hash, mesh.c.tx_hex]).where(mesh.c.uuid == uuid)
+    return conn.execute(s).fetchone().values()

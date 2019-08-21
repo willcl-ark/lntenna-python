@@ -154,3 +154,10 @@ def de_segment(segment_list: list):
         a, b, c, msg = i.split("/")
         result += msg
     return result
+
+
+def log(message, cli):
+    if cli:
+        pprint(message)
+    else:
+        logger.debug(message)
