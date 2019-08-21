@@ -62,8 +62,11 @@ if __name__ == "__main__":
     print(arguments)
 
     if arguments["--debug"]:
-        g.CONN.sdk_token(CONFIG["gotenna"]["SDK_TOKEN"])
-        g.CONN.set_gid(int(CONFIG["gotenna"]["DEBUG_GID"]))
-        g.CONN.set_geo_region(int(CONFIG["gotenna"]["GEO_REGION"]))
+        try:
+            g.CONN.sdk_token(CONFIG["gotenna"]["SDK_TOKEN"])
+            g.CONN.set_gid(int(CONFIG["gotenna"]["DEBUG_GID"]))
+            g.CONN.set_geo_region(int(CONFIG["gotenna"]["GEO_REGION"]))
+        except Exception as e:
+            raise e
     db.init()
     main(port=arguments["--port"])
