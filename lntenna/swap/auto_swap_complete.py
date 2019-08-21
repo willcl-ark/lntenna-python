@@ -28,11 +28,11 @@ def broadcast_transaction(uuid, tx_hex, cli):
     if bitcoind:
         log("Bitcoind active", cli)
         tx_hash = proxy.sendrawtransaction(tx_hex)
-        log(f"Transaction submitted via bitcoind:\n{tx_hash}", cli)
+        log(f"Transaction submitted via bitcoind:\n{pformat(tx_hash)}", cli)
     else:
         log("Uploading transaction using submarine_api...", cli)
         tx_hash = broadcast_tx(CONFIG["swap"]["URL"], network, tx_hex)
-        log(f"Transaction submitted via submarine_api:\n{tx_hash}", cli)
+        log(f"Transaction submitted via submarine_api:\n{pformat(tx_hash)}", cli)
 
     return tx_hash
 

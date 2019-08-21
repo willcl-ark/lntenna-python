@@ -35,7 +35,9 @@ def auto_swap_create(request, cli):
 
     # create blocksat order
     # TODO: Add some bid creation logic here or somewhere else...
-    blocksat_order = create_order(message=message, bid="10000", network=network, uuid=uuid)
+    blocksat_order = create_order(
+        message=message, bid="10000", network=network, uuid=uuid
+    )
 
     # lookup the invoice with the swap server to ensure it's valid & payable
     assert (

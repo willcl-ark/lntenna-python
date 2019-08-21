@@ -3,7 +3,7 @@ from binascii import hexlify
 from pprint import pformat, pprint
 
 from lntenna.bitcoin import AuthServiceProxy, SATOSHIS
-from lntenna.database import add_verify_quote
+from lntenna.database import mesh_add_verify_quote, lookup_network
 from lntenna.gotenna.utilities import log
 from lntenna.lightning.lnaddr import lndecode
 from lntenna.server.config import CONFIG
@@ -22,15 +22,18 @@ def proxy():
 def auto_swap_verify_quote(message, cli=False):
     result = {}
     if cli:
-        print("\n---------------------------------------\n\n")
-        print(f"Your lntenna UUID for this order is: {message['u']}")
-        print(f"You can use this to re-send swap_tx message to GATEWAY and to query "
-              f"status of interrupted swaps.")
-        print("\n\n---------------------------------------\n")
+        log("\n---------------------------------------\n\n", cli)
+        log(f"Your lntenna UUID for this order is: {message['u']}", cli)
+        log(
+            f"You can use this to re-send swap_tx message to GATEWAY and to query "
+            f"status of interrupted swaps.",
+            cli,
+        )
+        log("\n\n---------------------------------------\n", cli)
     # decode the invoice, raise value error if signature mismatch
     decoded_inv = lndecode(message["i"])
-    print(f"Decoded invoice: {decoded_inv}")
-    print("Redeem script: {message['rs']}")
+    log(f"Decoded invoice: {decoded_inv}", cli)
+    log(f"Redeem script: {message['rs']}", cli)
 
     # Check the Pubkey from the invoice matches hardcoded keys
     log("Checking decoded pubkey matches known blockstream pubkeys...", cli)
@@ -47,11 +50,18 @@ def auto_swap_verify_quote(message, cli=False):
     # calculate amount the bitcoin transaction
     amount = f'{message["am"] / SATOSHIS:.8f}'
     if cli:
-        print(f"\nAre you happy to proceed with creating bitcoin transaction for "
-              f"{amount} Bitcoin to fulfill swap request\n")
+        # lookup network using UUID from db
+        network = lookup_network(message["u"])
+        log(
+            f"\nAre you happy to proceed with creating the below transaction to fulfill"
+            f" swap request:\n"
+            f"\tNETWORK: {network}\n"
+            f"\tAMOUNT: {amount}\n",
+            cli,
+        )
         res = input("Enter 'y' to continue\t") or "y"
-        if res.lower() != 'y':
-            print("satellite message payment cancelled")
+        if res.lower() != "y":
+            log("satellite message payment cancelled", cli)
             return
 
     # setup the transaction
@@ -63,7 +73,7 @@ def auto_swap_verify_quote(message, cli=False):
     result["uuid"] = message["u"]
 
     # write to db as we don't have it on our side yet.:
-    add_verify_quote(
+    mesh_add_verify_quote(
         message["u"],
         message["i"],
         message["am"],

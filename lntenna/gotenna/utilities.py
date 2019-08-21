@@ -158,6 +158,6 @@ def de_segment(segment_list: list):
 
 def log(message, cli):
     if cli:
-        pprint(message)
+        print(message)
     else:
         logger.debug(message)

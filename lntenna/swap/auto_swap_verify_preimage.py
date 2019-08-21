@@ -1,5 +1,6 @@
 import hashlib
 import logging
+from pprint import pformat
 
 from lntenna.database import swap_add_preimage
 from lntenna.gotenna.utilities import log
@@ -15,10 +16,11 @@ def auto_swap_verify_preimage(uuid, preimage: str, payment_hash: str, cli):
     swap_add_preimage(uuid, preimage)
     log(
         f"Hashing preimage to check for match...\n"
-        f"Returned preimage: {preimage}\nhashes to preimage hash: {preimage_hash}\n"
+        f"Preimage: {preimage}\nhashes to: "
+        f"{pformat(preimage_hash)}\n"
         f"Preimage satisfies payment hash!\n"
-        f"Swap complete -- lightning invoice satisfied. Watch Blocksat feed for "
-        f"message.",
+        f"Swap complete -- lightning invoice satisfied. "
+        f"Watch Blocksat feed for message.",
         cli,
     )
 
