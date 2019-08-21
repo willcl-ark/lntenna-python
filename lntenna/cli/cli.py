@@ -1,11 +1,12 @@
-#! usr/bin/python
+#!/usr/bin/env python3
 
 import cmd
-import simplejson as json
-from pprint import pformat
+from pprint import pformat, pprint
 
+import simplejson as json
+
+from lntenna.database.db import cli_lookup_swap_tx, cli_lookup_uuid
 from lntenna.gotenna.connection import Connection
-from lntenna.database.db import cli_lookup_swap_tx
 
 
 class Lntenna(cmd.Cmd):
@@ -51,26 +52,24 @@ class Lntenna(cmd.Cmd):
         except Exception:
             pass
 
-    def do_sdk_token(self, arg):
+    def do_sdk_token(self, sdk_token):
         """Set SDK Token for the connection
-        :arg sdk_token
+        :param sdk_token: str
         """
-        self.conn.sdk_token(arg)
+        self.conn.sdk_token(sdk_token)
         # print(f"SDK token set: {self.conn.api_thread.sdk_token.decode('utf-8')}")
 
-    def do_set_gid(self, arg):
+    def do_set_gid(self, gid):
         """Set GID for the GoTenna device
-        :arg GID
+        :param gid: int
         """
-        arg = int(arg)
-        self.conn.set_gid(arg)
+        self.conn.set_gid(int(gid))
 
-    def do_set_geo_region(self, arg):
+    def do_set_geo_region(self, region):
         """Set geo_region for the GoTenna device:
-        :arg geo_region
+        :param region: int
         """
-        arg = int(arg)
-        self.conn.set_geo_region(arg)
+        self.conn.set_geo_region(int(region))
         # print(f"geo_region set: {self.conn.api_thread.geo_settings.region}")
 
     def do_can_connect(self, arg):
@@ -89,20 +88,20 @@ class Lntenna(cmd.Cmd):
         """
         self.conn.get_system_info()
 
-    def do_send_broadcast(self, arg):
+    def do_send_broadcast(self, message):
         """Send a broadcast message to all nearby GoTenna devices
-        :arg message
+        :param message: str
 
         If no message is provided as argument, you will be provided with a prompt to
         enter your message
         """
-        if arg == "":
-            arg = input("Message: ")
-        self.conn.send_broadcast(arg)
+        if message == "":
+            message = input("Message: ")
+        self.conn.send_broadcast(message)
 
     def do_send_sat_msg(self, arg):
         """Send a message via the Blockstream Blocksat
-        You will be prompted for additional details
+        Run with no parameters and you will be prompted for additional details
         Network must be either exactly 'mainnet' or 'testnet'
         """
         if arg == "":
@@ -143,11 +142,11 @@ class Lntenna(cmd.Cmd):
             else:
                 self.conn.send_jumbo(json.dumps(req))
 
-    def do_resend_swap_tx(self, arg):
+    def do_resend_swap_tx(self, uuid):
         """Resend the "swap_tx" message to the gateway for the specified UUID
-        :arg UUID
+        :param uuid: str
         """
-        uuid = str(arg)
+        uuid = str(uuid)
         tx_hash, tx_hex = cli_lookup_swap_tx(uuid)
         swap_tx_msg = {"swap_tx": {"tx_hash": tx_hash, "tx_hex": tx_hex, "uuid": uuid}}
         print(f"Successfully looked up swap in the db:\n{pformat(swap_tx_msg)}")
