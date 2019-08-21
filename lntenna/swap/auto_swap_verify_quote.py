@@ -23,14 +23,14 @@ def auto_swap_verify_quote(message, cli=False):
     result = {}
     if cli:
         print("\n---------------------------------------\n\n")
-        print(f"Your lntenna UUID for this order is: {message['uuid']}", cli)
+        print(f"Your lntenna UUID for this order is: {message['u']}")
         print(f"You can use this to re-send swap_tx message to GATEWAY and to query "
               f"status of interrupted swaps.")
         print("\n\n---------------------------------------\n")
     # decode the invoice, raise value error if signature mismatch
-    decoded_inv = lndecode(message["inv"])
-    print({"Decoded invoice": decoded_inv}, cli)
-    print({"Redeem script": message["r_s"]}, cli)
+    decoded_inv = lndecode(message["i"])
+    print(f"Decoded invoice: {decoded_inv}")
+    print("Redeem script: {message['rs']}")
 
     # Check the Pubkey from the invoice matches hardcoded keys
     log("Checking decoded pubkey matches known blockstream pubkeys...", cli)
@@ -41,11 +41,11 @@ def auto_swap_verify_quote(message, cli=False):
     # check the redeem_script matches the lightning invoice payment_hash
     log("Checking swap redeem script matches lightning invoice payment hash...", cli)
     payment_hash = decoded_inv.paymenthash.hex()
-    assert compare_redeemscript_invoice(payment_hash, message["r_s"])
+    assert compare_redeemscript_invoice(payment_hash, message["rs"])
     log("Redeem script and payment hash match", cli)
 
     # calculate amount the bitcoin transaction
-    amount = f'{message["amt"] / SATOSHIS:.8f}'
+    amount = f'{message["am"] / SATOSHIS:.8f}'
     if cli:
         print(f"\nAre you happy to proceed with creating bitcoin transaction for "
               f"{amount} Bitcoin to fulfill swap request\n")
@@ -55,20 +55,20 @@ def auto_swap_verify_quote(message, cli=False):
             return
 
     # setup the transaction
-    result["tx_hash"] = proxy().sendtoaddress(message["addr"], amount)
+    result["tx_hash"] = proxy().sendtoaddress(message["ad"], amount)
     tx_hash = proxy().gettransaction(result["tx_hash"])
     result["tx_hex"] = tx_hash["hex"]
     # TODO: for separate machines should change to getrawtransaction as per below
     # result["tx_hex"] = proxy.getrawtransaction(result["tx_hash"])
-    result["uuid"] = message["uuid"]
+    result["uuid"] = message["u"]
 
     # write to db as we don't have it on our side yet.:
     add_verify_quote(
-        message["uuid"],
-        message["inv"],
-        message["amt"],
-        message["addr"],
-        message["r_s"],
+        message["u"],
+        message["i"],
+        message["am"],
+        message["ad"],
+        message["rs"],
         pubkey,
         payment_hash,
         tx_hash["txid"],

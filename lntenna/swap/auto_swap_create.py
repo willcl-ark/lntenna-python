@@ -15,12 +15,14 @@ def auto_swap_create(request, cli):
     """Takes a dict as argument of the following structure, with arguments
     "m" - message,
     "a" - refund address
-    "n" - network:
+    "n" - network
+    "u" - shared uuid (8 chars from uuid4)
 
     {"sat_req":
         {"m": "Hello, World!",
          "a": "mut6HiwhKab6csGyUBbacoHDq7BvENVti8",
          "n": "t"
+         "u": "721cbf09"
          }
     }
 
@@ -29,10 +31,11 @@ def auto_swap_create(request, cli):
     message = request["m"]
     refund_addr = request["a"]
     network = "testnet" if request["n"] is "t" else "mainnet"
+    uuid = request["u"]
 
     # create blocksat order
     # TODO: Add some bid creation logic here or somewhere else...
-    blocksat_order = create_order(message=message, bid="10000", network=network)
+    blocksat_order = create_order(message=message, bid="10000", network=network, uuid=uuid)
 
     # lookup the invoice with the swap server to ensure it's valid & payable
     assert (
@@ -45,7 +48,7 @@ def auto_swap_create(request, cli):
 
     # get a swap quote from the swap server
     swap = get_swap_quote(
-        uuid=blocksat_order["uuid"],
+        uuid=uuid,
         invoice=blocksat_order["response"]["lightning_invoice"]["payreq"],
         network=network,
         refund_addr=refund_addr,
@@ -53,11 +56,11 @@ def auto_swap_create(request, cli):
 
     result = {
         "sat_fill": {
-            "uuid": blocksat_order["uuid"],
-            "inv": blocksat_order["response"]["lightning_invoice"]["payreq"],
-            "amt": swap["response"]["swap_amount"],
-            "addr": swap["response"]["swap_p2sh_address"],
-            "r_s": swap["response"]["redeem_script"],
+            "u": uuid,
+            "i": blocksat_order["response"]["lightning_invoice"]["payreq"],
+            "am": swap["response"]["swap_amount"],
+            "ad": swap["response"]["swap_p2sh_address"],
+            "rs": swap["response"]["redeem_script"],
         }
     }
 

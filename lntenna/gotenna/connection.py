@@ -500,6 +500,7 @@ class Connection:
                 f"Raised exception when trying to handle message:\n"
                 f"Payload: {payload}\n"
                 f"Not a known message type."
+                f"{e}"
             )
 
     def handle_known_msg(self, message):

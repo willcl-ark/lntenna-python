@@ -87,6 +87,8 @@ mesh = Table(
     Column("tx_hash", String),
     Column("tx_hex", String),
     Column("swap_complete", Boolean),
+    Column("network", String),
+    Column("message", String),
 )
 
 
@@ -206,7 +208,24 @@ def lookup_swap_details(uuid):
     return conn.execute(s).fetchone().values()
 
 
-def add_verify_quote(uuid, inv, amt, addr, r_s, pubkey, payment_hash, tx_hash, tx_hex):
+def add_sat_request(message, refund_addr, network, uuid):
+    with engine.connect() as conn:
+        ins = mesh.insert()
+        try:
+            conn.execute(
+                ins,
+                message=message,
+                refund_address=refund_addr,
+                network=network,
+                uuid=uuid,
+            )
+        except IntegrityError as e:
+            raise e
+
+
+def add_verify_quote(
+    uuid, inv, amt, addr, r_s, pubkey, payment_hash, tx_hash, tx_hex,
+):
     with engine.connect() as conn:
         ins = mesh.insert()
         try:

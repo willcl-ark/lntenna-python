@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
 
 @try_json
-def create_order(message: str, bid: str, network: str):
+def create_order(message: str, bid: str, network: str, uuid):
     logger.debug("Creating blocksat order")
     if network.strip().lower() == "testnet":
         satellite_url = CONFIG["blocksat"]["TESTNET_URL"]
@@ -20,7 +20,6 @@ def create_order(message: str, bid: str, network: str):
         satellite_url = CONFIG["blocksat"]["MAINNET_URL"]
     else:
         return {"response": "Invalid network"}
-    uuid = str(uuid4())[:8]
     db.add_order(uuid=uuid, message=message, network=network)
     result = blocksat.place(message=message, bid=bid, satellite_url=satellite_url)
     if result.status_code == 200:

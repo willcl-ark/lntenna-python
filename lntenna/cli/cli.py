@@ -2,10 +2,11 @@
 
 import cmd
 from pprint import pformat, pprint
+from uuid import uuid4
 
 import simplejson as json
 
-from lntenna.database.db import cli_lookup_swap_tx, cli_lookup_uuid
+from lntenna.database.db import cli_lookup_swap_tx, cli_lookup_uuid, add_sat_request
 from lntenna.gotenna.connection import Connection
 
 
@@ -127,7 +128,12 @@ class Lntenna(cmd.Cmd):
             assert network.lower() == "mainnet" or "testnet"
             n = "m" if network.lower() is "mainnet" else "t"
 
-            req = {"sat_req": {"m": message, "a": addr, "n": n}}
+            # form the request
+            uuid = str(uuid4())[:8]
+            req = {"sat_req": {"m": message, "a": addr, "n": n, "u": uuid}}
+
+            # add the entry to the database
+            add_sat_request(message, addr, network, uuid)
 
             # send it via regular broadcast or jumbo depending on size
             if len(message) < 200:
