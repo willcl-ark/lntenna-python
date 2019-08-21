@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import simplejson as json
 
-from lntenna.database.db import cli_lookup_swap_tx, cli_lookup_uuid, add_sat_request
+from lntenna.database.db import cli_lookup_swap_tx, cli_lookup_uuid, mesh_add_sat_request
 from lntenna.gotenna.connection import Connection
 
 
@@ -107,22 +107,23 @@ class Lntenna(cmd.Cmd):
         """
         if arg == "":
             message = input("Message: ")
+            r = r2 = None
             if self.refund_address:
-                res = input(
+                r = input(
                     f"Do you want to use bitcoin address "
-                    f"{self.refund_address} from config file? y/n\t"
+                    f"{self.refund_address} from config file?\ny/n "
                 ) or "y"
-                if res.lower() == "y":
-                    addr = self.refund_address
+            if r and r.lower() == "y":
+                addr = self.refund_address
             else:
                 addr = input("Refund bitcoin address: ")
             if self.network:
-                res = input(
+                r2 = input(
                     f'Do you want to use network "{self.network}" from config'
-                    f" file? y/n\t"
+                    f" file?\ny/n "
                 ) or "y"
-                if res.lower() == "y":
-                    network = self.network
+            if r2 and r2.lower() == "y":
+                network = self.network
             else:
                 network = input("Network:")
             assert network.lower() == "mainnet" or "testnet"
@@ -133,7 +134,7 @@ class Lntenna(cmd.Cmd):
             req = {"sat_req": {"m": message, "a": addr, "n": n, "u": uuid}}
 
             # add the entry to the database
-            add_sat_request(message, addr, network, uuid)
+            mesh_add_sat_request(message, addr, network, uuid)
 
             # send it via regular broadcast or jumbo depending on size
             if len(message) < 200:
