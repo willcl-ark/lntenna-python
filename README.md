@@ -62,7 +62,7 @@ With the venv active, run the following terminal command to start the GATEWAY se
 * optionally adding the `--no-api-server` flag will disable the API server, this is a good idea for testing currently as the API service is not fully implemented nor tested.
 
 ```bash
-python lntenna/server.server.py --debug --no-api-server
+python lntenna/server/server.py --debug --no-api-server
 ```
 
 Once the server is running, you can connect and power on the first GoTenna. Watch the terminal logs for connection messages.
