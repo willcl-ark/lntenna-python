@@ -7,8 +7,11 @@ Usage:
 
 Options:
     -h --help    Show this screen
-    --port PORT  Port to run the server on [default: 5000]
-    --debug      Run in debug mode. This will pull DEBUG_GID from config.ini for testing
+    --debug      Run in debug mode.
+                 This will pull a second unique GID (DEBUG_GID) from config.ini and
+                 attempt to automatically configure settings for automatic GoTenna
+                 connection instead of requiring manual setup from API calls.
+    --port PORT  Port to run the REST API server on [default: 5000]
 
 """
 
@@ -57,16 +60,17 @@ def main(port):
 
 if __name__ == "__main__":
 
-    # read docopt arguments
     arguments = docopt(__doc__)
     print(arguments)
 
     if arguments["--debug"]:
+        # setup the GoTenna Driver instance with settings from $HOME/.lntenna/config.ini
         try:
             g.CONN.sdk_token(CONFIG["gotenna"]["SDK_TOKEN"])
             g.CONN.set_gid(int(CONFIG["gotenna"]["DEBUG_GID"]))
             g.CONN.set_geo_region(int(CONFIG["gotenna"]["GEO_REGION"]))
         except Exception as e:
             raise e
+    # check or create all db tables as necessary
     db.init()
     main(port=arguments["--port"])
