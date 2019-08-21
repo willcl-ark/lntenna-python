@@ -125,9 +125,9 @@ class Lntenna(cmd.Cmd):
             if r2 and r2.lower() == "y":
                 network = self.network
             else:
-                network = input("Network:")
+                network = input("Network (mainnet or testnet: ")
             assert network.lower() == "mainnet" or "testnet"
-            n = "m" if network.lower() is "mainnet" else "t"
+            n = "m" if network.lower() == "mainnet" else "t"
 
             # form the request
             uuid = str(uuid4())[:8]
