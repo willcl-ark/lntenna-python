@@ -3,19 +3,27 @@
 """lntenna API server
 
 Usage:
-    server.py [--debug] [--port PORT]
+    server.py [--debug] [--port PORT] [--no-api-server]
 
 Options:
     -h --help    Show this screen
-    --debug      Run in debug mode.
+
+    -d --debug   Run in debug mode.
+
                  This will pull a second unique GID (DEBUG_GID) from config.ini and
-                 attempt to automatically configure settings for automatic GoTenna
-                 connection instead of requiring manual setup from API calls.
-    --port PORT  Port to run the REST API server on [default: 5000]
+                 attempt to configure settings for automatic GoTenna connection instead
+                 of requiring manual setup from API calls.
+
+    -p --port PORT
+                 Port to run the REST API server on [default: 5000]
+
+    -n --no-api-server
+                 Disable the REST API server
 
 """
 
 import logging
+from time import sleep
 
 from docopt import docopt
 from flask import Flask
@@ -73,4 +81,11 @@ if __name__ == "__main__":
             raise e
     # check or create all db tables as necessary
     db.init()
-    main(port=arguments["--port"])
+    if arguments["--no-api-server"]:
+        try:
+            while True:
+                sleep(60)
+        except KeyboardInterrupt:
+            print("\nExiting via KeyboardInterrupt")
+    else:
+        main(port=arguments["--port"])

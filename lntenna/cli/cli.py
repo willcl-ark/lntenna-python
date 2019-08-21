@@ -171,4 +171,7 @@ class Lntenna(cmd.Cmd):
 
 if __name__ == "__main__":
     connection = Connection()
-    Lntenna(conn=connection).cmdloop()
+    try:
+        Lntenna(conn=connection).cmdloop()
+    except KeyboardInterrupt:
+        print("\nExiting via KeyboardInterrupt")
