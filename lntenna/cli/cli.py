@@ -153,18 +153,21 @@ class Lntenna(cmd.Cmd):
         print(f"Successfully looked up swap in the db:\n{pformat(swap_tx_msg)}")
         self.conn.send_jumbo(swap_tx_msg)
 
+    def do_lookup_order(self, uuid):
+        """Lookup order details for a provided lntenna UUID
+
+        :param uuid: str
+        """
+        uuid = str(uuid)
+        order = cli_lookup_uuid(uuid)
+        pprint(order)
+
     @staticmethod
     def do_exit(arg):
         """Exit cli app
         """
         print("Goodbye")
         return True
-
-
-def parse(arg):
-    """Convert a series of zero or more numbers to an argument tuple
-    """
-    return tuple(map(int, arg.split()))
 
 
 if __name__ == "__main__":

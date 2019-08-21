@@ -250,3 +250,11 @@ def cli_lookup_swap_tx(uuid):
     conn = engine.connect()
     s = select([mesh.c.tx_hash, mesh.c.tx_hex]).where(mesh.c.uuid == uuid)
     return conn.execute(s).fetchone().values()
+
+
+def cli_lookup_uuid(uuid):
+    conn = engine.connect()
+    s = select([c for c in mesh.columns]).where(mesh.c.uuid == uuid)
+    r = conn.execute(s).fetchone()
+    d = dict(zip(r.keys(), r.values()))
+    return d
