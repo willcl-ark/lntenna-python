@@ -1,6 +1,7 @@
 aniso8601==7.0.0
 asn1crypto==0.24.0
 blocksat-api==0.0.1
+git+https://github.com/willcl-ark/blockstream_blocksat.git#egg=blocksat_api
 certifi==2019.6.16
 cffi==1.12.3
 chardet==3.0.4
@@ -22,6 +23,6 @@ pytz==2019.2
 requests==2.22.0
 six==1.12.0
 SQLAlchemy==1.3.6
-submarine-api==0.0.2
+git+https://github.com/willcl-ark/submarine_swaps.git#egg=submarine_api
 urllib3==1.25.3
 Werkzeug==0.15.5
