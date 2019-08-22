@@ -37,8 +37,9 @@ def broadcast_transaction(uuid, tx_hex, cli):
     return tx_hash
 
 
-def monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=None):
-    log("Starting swap status monitor", cli)
+def monitor_swap_status(uuid, cli, interval, timeout, conn=None):
+    log(f"Starting swap status monitor for {timeout} seconds with an interval "
+        f"of {interval} seconds.", cli)
     start = time.time()
     swap_status = None
 
@@ -55,14 +56,25 @@ def monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=None):
             db.swaps_add_preimage(uuid, swap_status["response"]["payment_secret"])
             return swap_status
         time.sleep(interval)
-    return swap_status["response"]
+    conn.log("Swap status monitor ending")
+    return swap_status
 
 
-def auto_swap_complete(uuid, tx_hex, cli):
+def auto_swap_complete(uuid, tx_hex, cli, conn):
+    network = db.orders_get_network(uuid)
     result = {"uuid": uuid}
     # broadcast the tx
     result["tx_hash"] = broadcast_transaction(uuid, tx_hex, cli)
     # monitor the swap status to see when the swap has been fulfilled
-    result["preimage"] = monitor_swap_status(uuid, cli)
-    log(f"auto_swap_complete result:\n{pformat(result)}", cli)
-    return {"swap_complete": result}
+    if network == "mainnet":
+        # if mainnet monitor for one block by default as SSS needs 1 confirmation
+        swap_status = monitor_swap_status(uuid, cli, interval=30, timeout=720, conn=conn)
+    else:
+        # if testnet, monitor at quicker interval for less time
+        swap_status = monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=conn)
+    if "payment_secret" in swap_status["response"]:
+        conn.log(f"Swap complete!:\n{pformat(swap_status['response'])}", cli)
+    else:
+        conn.log(f"Swap not yet complete:\n{pformat(swap_status['response'])}", cli)
+    result["status"] = swap_status["response"]
+    return {"swap_status": result}

@@ -5,7 +5,7 @@ from time import sleep, time
 import requests
 import simplejson as json
 
-from lntenna.database import init as init_db, swap_get_payment_hash, query_swap_details
+from lntenna.database import init as init_db, mesh_get_payment_hash, query_swap_details
 from lntenna.gotenna.utilities import de_segment, prepare_api_request
 from lntenna.swap import (
     auto_swap_complete,
@@ -105,7 +105,7 @@ def handle_known_msg(conn, message):
             conn.log("Processing a swap_complete message")
             try:
                 # msg = json.loads(v)
-                payment_hash = swap_get_payment_hash(v["uuid"])
+                payment_hash = mesh_get_payment_hash(v["uuid"])
                 if auto_swap_verify_preimage(
                     v["uuid"], v["preimage"], payment_hash, conn.cli
                 ):
