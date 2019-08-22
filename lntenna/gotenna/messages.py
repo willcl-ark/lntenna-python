@@ -5,7 +5,6 @@ from time import sleep, time
 import requests
 import simplejson as json
 
-from lntenna.api import MSG_CODES
 from lntenna.database import init as init_db, swap_lookup_payment_hash
 from lntenna.gotenna.utilities import de_segment, prepare_api_request
 from lntenna.swap import (
@@ -14,6 +13,15 @@ from lntenna.swap import (
     auto_swap_verify_preimage,
     auto_swap_verify_quote,
 )
+
+MSG_CODES = [
+    "api_request",
+    "sat_req",
+    "sat_fill",
+    "swap_tx",
+    "swap_complete",
+    "swap_check",
+]
 
 
 def handle_message(conn, message):
@@ -50,6 +58,8 @@ def handle_message(conn, message):
                     f"handle:\n{payload}"
                     f"Not a known message type."
                 )
+    except json.JSONDecodeError as e:
+        conn.log(f"Nothing to handle for non json-encoded message: \n{payload}")
     except Exception as e:
         conn.log(
             f"Raised exception when trying to handle message:\n"
@@ -158,6 +168,8 @@ def monitor_jumbo_msgs(conn, timeout=30):
     # reset jumbo events after timeout
     conn.events.init_jumbo()
     if missing:
-        conn.log("Did not receive all jumbo messages require for re-assembly. "
-                 "Please request the message again from the remote host.")
+        conn.log(
+            "Did not receive all jumbo messages require for re-assembly. "
+            "Please request the message again from the remote host."
+        )
     return
