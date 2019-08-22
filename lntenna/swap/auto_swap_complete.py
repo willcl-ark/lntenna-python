@@ -1,5 +1,6 @@
 import logging
 import time
+import simplejson as json
 from pprint import pformat
 
 from submarine_api import broadcast_tx
@@ -38,20 +39,23 @@ def broadcast_transaction(uuid, tx_hex, cli):
 
 
 def monitor_swap_status(uuid, cli, interval, timeout, conn=None):
-    log(f"Starting swap status monitor for {timeout} seconds with an interval "
-        f"of {interval} seconds.", cli)
+    conn.log(
+        f"Starting swap status monitor for {timeout} seconds with an interval "
+        f"of {interval} seconds.",
+    )
     start = time.time()
     swap_status = None
+    tries = 0
 
     while True and time.time() < start + timeout:
         swap_status = check_swap(uuid)
+        tries += 1
         if conn:
-            conn.log(f"Swap status: {swap_status}")
+            conn.log(f"Swap status try {tries}:\n{pformat(swap_status)}")
         if "payment_secret" in swap_status["response"]:
-            log(
+            conn.log(
                 f"Payment secret detected:\n"
                 f"{swap_status['response']['payment_secret']}",
-                cli,
             )
             db.swaps_add_preimage(uuid, swap_status["response"]["payment_secret"])
             return swap_status
@@ -67,14 +71,18 @@ def auto_swap_complete(uuid, tx_hex, cli, conn):
     result["tx_hash"] = broadcast_transaction(uuid, tx_hex, cli)
     # monitor the swap status to see when the swap has been fulfilled
     if network == "mainnet":
-        # if mainnet monitor for one block by default as SSS needs 1 confirmation
-        swap_status = monitor_swap_status(uuid, cli, interval=30, timeout=720, conn=conn)
+        # if mainnet use longer interval and timeout as SSS needs 1 confirmation
+        swap_status = monitor_swap_status(
+            uuid, cli, interval=30, timeout=720, conn=conn
+        )
     else:
-        # if testnet, monitor at quicker interval for less time
+        # if testnet, monitor at quicker interval and lower timeout
         swap_status = monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=conn)
     if "payment_secret" in swap_status["response"]:
-        conn.log(f"Swap complete!:\n{pformat(swap_status['response'])}", cli)
+        conn.log(f"Swap complete!:\n{pformat(swap_status['response'])}")
+        result["payment_secret"] = swap_status["response"]["payment_secret"]
     else:
-        conn.log(f"Swap not yet complete:\n{pformat(swap_status['response'])}", cli)
-    result["status"] = swap_status["response"]
+        conn.log(f"Swap not yet complete:\n{pformat(swap_status['response'])}")
+        result["status"] = "incomplete"
+        result["details"] = swap_status["response"]
     return {"swap_status": result}

@@ -1,4 +1,5 @@
 import logging
+from pprint import pformat
 
 from blocksat_api import blocksat
 
@@ -29,7 +30,7 @@ def create_order(message: str, bid: str, network: str, uuid):
         except Exception as e:
             raise {"exception": e, "result": result}
     logging.debug(
-        f"Successfully created blocksat order:\n{result.json()} using "
+        f"Successfully created blocksat order:\n{pformat(result.json())} using "
         f"satellite_url {satellite_url} and uuid {uuid}"
     )
     return {"response": result.json(), "uuid": uuid}

@@ -1,5 +1,6 @@
 import threading
 import types
+from pprint import pformat
 from time import sleep, time
 
 import requests
@@ -21,7 +22,7 @@ MSG_CODES = [
     "sat_req",
     "sat_fill",
     "swap_tx",
-    "swap_complete",
+    "swap_status",
     "swap_check",
 ]
 
@@ -99,19 +100,26 @@ def handle_known_msg(conn, message):
         if k == "swap_tx":
             conn.log("Processing a swap_tx message")
             swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"], conn.cli, conn)
-            conn.send_broadcast(json.dumps(swap_complete))
+            result = json.dumps(swap_complete)
+            if len(result) < 220:
+                conn.send_broadcast(result)
+            else:
+                conn.send_jumbo(result)
 
-        if k == "swap_complete":
-            conn.log("Processing a swap_complete message")
-            try:
-                # msg = json.loads(v)
-                payment_hash = mesh_get_payment_hash(v["uuid"])
-                if auto_swap_verify_preimage(
-                    v["uuid"], v["preimage"], payment_hash, conn.cli
-                ):
+        if k == "swap_status":
+            conn.log("Processing a swap_status message")
+            if "payment_secret" in v:
+                try:
+                    payment_hash = mesh_get_payment_hash(v["uuid"])
+                    if auto_swap_verify_preimage(
+                        v["uuid"],
+                        v["payment_secret"],
+                        payment_hash,
+                        conn.cli
+                    ):
+                        conn.log(f"Swap complete:\n{pformat(v)}")
+                except Exception:
                     conn.log(v)
-            except Exception:
-                conn.log(v)
 
         if k == "swap_check":
             conn.log("Processing a swap_check message")
@@ -121,7 +129,10 @@ def handle_known_msg(conn, message):
             # Lookup the relevant details from the db
             network, invoice, redeem_script = query_swap_details(v["uuid"])
             if network and invoice and redeem_script:
-                conn.log(f"Successfully looked up details for swap_check")
+                conn.log(
+                    f"Successfully looked up details for swap_check for "
+                    f"uuid: {v['uuid']}"
+                )
             else:
                 conn.send_broadcast(
                     f"swap_check for uuid: {v['uuid']} could not find "
@@ -132,13 +143,20 @@ def handle_known_msg(conn, message):
             # Check the status and return it initially as a first response
             swap_status = check_swap(v["uuid"])
             if "payment_secret" in swap_status["response"]:
-                conn.send_broadcast(
-                    f"Swap complete. Preimage: "
-                    f"{swap_status['response']['payment_secret']}"
-                )
+                result = {
+                    "status": "complete",
+                    "uuid": v["uuid"],
+                    "preimage": swap_status["response"]["payment_secret"],
+                }
+                conn.send_broadcast(json.dumps(result))
                 return
             else:
-                conn.send_broadcast(f"Swap incomplete: {swap_status['response']}")
+                result = {
+                    "status": "incomplete",
+                    "uuid": v["uuid"],
+                    "details": swap_status["response"],
+                }
+                conn.send_broadcast(json.dumps(result))
 
             # If not complete, start a thread to monitor status intermittently or
             # intelligently based on SSS required confs for mainnet
