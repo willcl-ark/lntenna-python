@@ -1,26 +1,16 @@
 import logging
 import threading
 import traceback
-import types
 from pprint import pprint
-from time import sleep, time
+from time import sleep
 
 import goTenna
-import requests
-import simplejson as json
 
 import lntenna.bitcoin as btc
-from lntenna.api import MSG_CODES
-from lntenna.database import init as init_db, swap_lookup_payment_hash
 from lntenna.gotenna.events import Events
-from lntenna.gotenna.utilities import de_segment, prepare_api_request, segment, cli
+from lntenna.gotenna.messages import handle_message
+from lntenna.gotenna.utilities import cli, segment
 from lntenna.server.config import CONFIG
-from lntenna.swap import (
-    auto_swap_create,
-    auto_swap_complete,
-    auto_swap_verify_quote,
-    auto_swap_verify_preimage,
-)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
@@ -109,7 +99,7 @@ class Connection:
             self.events.msg.put(evt)
             try:
                 thread = threading.Thread(
-                    target=self.handle_message, args=[evt.message]
+                    target=handle_message, args=[self, evt.message]
                 )
                 thread.start()
             except Exception:
@@ -441,131 +431,6 @@ class Connection:
         info = {"SYSTEM_INFO": self.api_thread.system_info}
         self.log(info)
         return info
-
-    def handle_jumbo_message(self, message):
-        payload = message.payload.message
-        if payload.startswith("sm/"):
-            # TODO: this cuts out all sender and receiver info -- ADD SENDER GID
-            self.log(f"Received jumbo message fragment")
-            prefix, seq, length, msg = payload.split("/")
-            if self.jumbo_thread.is_alive():
-                pass
-            else:
-                self.events.jumbo_len = length
-                self.jumbo_thread = None
-                self.jumbo_thread = threading.Thread(
-                    target=self.monitor_jumbo_msgs, daemon=True
-                )
-                self.jumbo_thread.start()
-            self.events.jumbo.append(payload)
-            return True
-        return False
-
-    def handle_message(self, message):
-        """
-        Handle messages received over the mesh network
-        :param message: as strings
-        :return: result of message handling
-        """
-
-        # handle a jumbo message
-        try:
-            if self.handle_jumbo_message(message):
-                return
-            else:
-                pass
-        except Exception:
-            pass
-
-        # handle a known message type defined in MSG_CODES
-        payload = message.payload.message
-        try:
-            # decode json-encoded strings
-            payload = json.loads(payload)
-            for k, v in payload.items():
-                if k in MSG_CODES:
-                    self.log(f"Handling a {k} message")
-                    # make sure all db tables needed exist
-                    # TODO: move this to more appropriate place
-                    init_db()
-                    # pass the full request dict through to parse message type later
-                    return self.handle_known_msg(payload)
-                else:
-                    self.log(
-                        f"Received json-encoded message but could not automatically "
-                        f"handle:\n{payload}"
-                    )
-        except Exception as e:
-            self.log(
-                f"Raised exception when trying to handle message:\n"
-                f"Payload: {payload}\n"
-                f"Not a known message type."
-                f"{e}"
-            )
-
-    def handle_known_msg(self, message):
-        for k, v in message.items():
-            if k == "api_request":
-                self.log("Processing a api_request message")
-                # pass the request dict only through
-                prepped = prepare_api_request(v)
-                self.log("Prepared an api request")
-                with requests.Session() as s:
-                    return s.send(prepped, timeout=30)
-            if k == "sat_req":
-                # do an automatic blocksat and swap setup
-                self.log("Processing a sat_req message")
-                sat_fill = auto_swap_create(v, self.cli)
-                self.send_jumbo(json.dumps(sat_fill))
-            if k == "sat_fill":
-                self.log("Processing a sat_fill message")
-                self.log("Received a quote response")
-                if self.cli:
-                    swap_tx = auto_swap_verify_quote(v, self.cli)
-                else:
-                    swap_tx = auto_swap_verify_quote(v)
-                self.send_jumbo(json.dumps(swap_tx))
-            if k == "swap_tx":
-                self.log("Processing a swap_tx message")
-                swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"], self.cli)
-                self.send_broadcast(json.dumps(swap_complete))
-            if k == "swap_complete":
-                self.log("Processing a swap_complete message")
-                try:
-                    # msg = json.loads(v)
-                    payment_hash = swap_lookup_payment_hash(v["uuid"])
-                    if auto_swap_verify_preimage(
-                        v["uuid"], v["preimage"], payment_hash, self.cli
-                    ):
-                        self.log(v)
-                except Exception:
-                    self.log(v)
-
-    def monitor_jumbo_msgs(self, timeout=30):
-        self.log("Starting jumbo message monitor thread")
-        start = time()
-        while True and time() < start + timeout:
-            self.log(
-                f"received: {len(self.events.jumbo)} of {self.events.jumbo_len} "
-                f"jumbo messages"
-            )
-            if (
-                len(self.events.jumbo) == int(self.events.jumbo_len)
-                and len(self.events.jumbo) is not 0
-            ):
-                # give handle_message the attributes it expects
-                jumbo_message = types.SimpleNamespace()
-                jumbo_message.payload = types.SimpleNamespace()
-                # reconstruct the jumbo message
-                jumbo_message.payload.message = de_segment(self.events.jumbo)
-                # send it back through handle_message
-                self.log(f"Jumbo message payload reconstituted")
-                self.handle_message(jumbo_message)
-                break
-            sleep(5)
-        # reset jumbo events after timeout
-        self.events.init_jumbo()
-        return
 
     def log(self, message):
         if self.cli:
