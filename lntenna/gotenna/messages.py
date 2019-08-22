@@ -98,7 +98,7 @@ def handle_known_msg(conn, message):
 
         if k == "swap_tx":
             conn.log("Processing a swap_tx message")
-            swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"], conn.cli)
+            swap_complete = auto_swap_complete(v["uuid"], v["tx_hex"], conn.cli, conn)
             conn.send_broadcast(json.dumps(swap_complete))
 
         if k == "swap_complete":
