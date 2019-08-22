@@ -112,8 +112,8 @@ class Lntenna(cmd.Cmd):
             r = r2 = None
             if self.refund_address:
                 r = input(
-                    f"Do you want to use bitcoin address "
-                    f"{self.refund_address} from config file?\ny/n "
+                    f"Do you want to use {self.refund_address} from config file as the "
+                    f"refund address for the swap?\ny/n "
                 ) or "y"
             if r and r.lower() == "y":
                 addr = self.refund_address
