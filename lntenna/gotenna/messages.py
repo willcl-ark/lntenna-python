@@ -134,6 +134,7 @@ def handle_jumbo_message(conn, message):
 def monitor_jumbo_msgs(conn, timeout=30):
     conn.log("Starting jumbo message monitor thread")
     start = time()
+    missing = True
     while True and time() < start + timeout:
         conn.log(
             f"received: {len(conn.events.jumbo)} of {conn.events.jumbo_len} "
@@ -143,6 +144,7 @@ def monitor_jumbo_msgs(conn, timeout=30):
             len(conn.events.jumbo) == int(conn.events.jumbo_len)
             and len(conn.events.jumbo) is not 0
         ):
+            missing = False
             # give handle_message the attributes it expects
             jumbo_message = types.SimpleNamespace()
             jumbo_message.payload = types.SimpleNamespace()
@@ -155,4 +157,7 @@ def monitor_jumbo_msgs(conn, timeout=30):
         sleep(5)
     # reset jumbo events after timeout
     conn.events.init_jumbo()
+    if missing:
+        conn.log("Did not receive all jumbo messages require for re-assembly. "
+                 "Please request the message again from the remote host.")
     return
