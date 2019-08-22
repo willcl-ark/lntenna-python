@@ -22,6 +22,7 @@ if not os.path.exists(db_path):
 engine = create_engine("sqlite:///{}".format(db_path + "database.db"))
 metadata = MetaData()
 
+# a general lntenna order table
 orders = Table(
     "orders",
     metadata,
@@ -32,7 +33,8 @@ orders = Table(
     Column("txid", String),
 )
 
-blocksat = Table(
+# for online node to store blockstream satellite info
+satellite = Table(
     "blocksat",
     metadata,
     Column("uuid", String(32), ForeignKey(orders.c.uuid), primary_key=True),
@@ -50,6 +52,7 @@ blocksat = Table(
     Column("status", String),
 )
 
+# for online node to store submarine swap info
 swaps = Table(
     "swaps",
     metadata,
@@ -71,7 +74,7 @@ swaps = Table(
     Column("payment_secret", String),
 )
 
-# a mesh table which will be utilised by offgrid nodes who won't get full responses
+# for off-grid nodes to store the information they receive
 mesh = Table(
     "mesh",
     metadata,
@@ -93,12 +96,12 @@ mesh = Table(
 
 
 # This will check for the presence of each table first before creating, so it's safe to
-# call multiple times
+# call multiple times (at each program start)
 def init():
     metadata.create_all(engine)
 
 
-def add_order(uuid, message, network):
+def orders_add_order(uuid, message, network):
     conn = engine.connect()
     ins = orders.insert()
     try:
@@ -107,9 +110,9 @@ def add_order(uuid, message, network):
         raise e
 
 
-def add_blocksat(uuid, satellite_url, result):
+def satellite_add_quote(uuid, satellite_url, result):
     conn = engine.connect()
-    ins = blocksat.insert()
+    ins = satellite.insert()
     try:
         conn.execute(
             ins,
@@ -133,7 +136,7 @@ def add_blocksat(uuid, satellite_url, result):
         raise e
 
 
-def add_refund_addr(uuid, refund_addr):
+def orders_add_refund_addr(uuid, refund_addr):
     conn = engine.connect()
     up = orders.update().where(orders.c.uuid == uuid).values(refund_address=refund_addr)
     try:
@@ -142,7 +145,7 @@ def add_refund_addr(uuid, refund_addr):
         raise e
 
 
-def add_swap(uuid, result):
+def swaps_add_swap_quote(uuid, result):
     conn = engine.connect()
     ins = swaps.insert()
     # add uuid to the result
@@ -154,7 +157,7 @@ def add_swap(uuid, result):
         raise e
 
 
-def add_txid(uuid, txid):
+def orders_add_txid(uuid, txid):
     conn = engine.connect()
     up = orders.update().where(orders.c.uuid == uuid).values(txid=txid)
     try:
@@ -163,7 +166,7 @@ def add_txid(uuid, txid):
         raise e
 
 
-def check_swap(uuid, preimage):
+def swaps_check_status(uuid, preimage):
     conn = engine.connect()
     up = swaps.update().where(swaps.c.uuid == uuid).values(preimage=preimage)
     try:
@@ -172,27 +175,27 @@ def check_swap(uuid, preimage):
         raise e
 
 
-def lookup_bump(uuid):
+def satellite_lookup_bump(uuid):
     conn = engine.connect()
     s = select(
-        [blocksat.c.blocksat_uuid, blocksat.c.auth_token, blocksat.c.satellite_url]
-    ).where(blocksat.c.uuid == uuid)
+        [satellite.c.blocksat_uuid, satellite.c.auth_token, satellite.c.satellite_url]
+    ).where(satellite.c.uuid == uuid)
     return conn.execute(s).fetchone().values()
 
 
-def lookup_refund_addr(uuid):
+def orders_get_refund_addr(uuid):
     conn = engine.connect()
     s = select([orders.c.refund_address]).where(orders.c.uuid == uuid)
     return conn.execute(s).fetchone().values()[0]
 
 
-def lookup_network(uuid):
+def orders_get_network(uuid):
     conn = engine.connect()
     s = select([orders.c.network]).where(orders.c.uuid == uuid)
     return conn.execute(s).fetchone().values()[0]
 
 
-def lookup_pay_details(uuid):
+def swaps_get_pay_details(uuid):
     conn = engine.connect()
     s = select([swaps.c.swap_amount, swaps.c.swap_p2sh_address]).where(
         swaps.c.uuid == uuid
@@ -200,7 +203,7 @@ def lookup_pay_details(uuid):
     return conn.execute(s).fetchone().values()
 
 
-def orders_lookup_swap_details(uuid):
+def query_swap_details(uuid):
     conn = engine.connect()
     s = select([orders.c.network, swaps.c.invoice, swaps.c.redeem_script]).where(
         or_(swaps.c.uuid == uuid, orders.c.uuid == uuid)
@@ -248,7 +251,7 @@ def mesh_add_verify_quote(
             raise e
 
 
-def swap_lookup_payment_hash(uuid):
+def swap_get_payment_hash(uuid):
     conn = engine.connect()
     s = select([mesh.c.payment_hash]).where(mesh.c.uuid == uuid)
     return conn.execute(s).fetchone().values()[0]
@@ -267,19 +270,19 @@ def swap_add_preimage(uuid, preimage):
         raise e
 
 
-def cli_lookup_swap_tx(uuid):
+def mesh_get_swap_tx(uuid):
     conn = engine.connect()
     s = select([mesh.c.tx_hash, mesh.c.tx_hex]).where(mesh.c.uuid == uuid)
     return conn.execute(s).fetchone().values()
 
 
-def cli_lookup_network(uuid):
+def mesh_get_network(uuid):
     conn = engine.connect()
     s = select([mesh.c.network]).where(mesh.c.uuid == uuid)
     return conn.execute(s).fetchone().values()
 
 
-def cli_lookup_uuid(uuid):
+def mesh_get_uuid(uuid):
     conn = engine.connect()
     s = select([c for c in mesh.columns]).where(mesh.c.uuid == uuid)
     r = conn.execute(s).fetchone()

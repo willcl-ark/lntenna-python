@@ -17,7 +17,7 @@ proxy = AuthServiceProxy()
 
 
 def broadcast_transaction(uuid, tx_hex, cli):
-    network = db.lookup_network(uuid)
+    network = db.orders_get_network(uuid)
     log(f"Broadcasting transaction", cli)
     try:
         proxy.getbalance()
@@ -41,6 +41,7 @@ def monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=None):
     log("Starting swap status monitor", cli)
     start = time.time()
     swap_status = None
+
     while True and time.time() < start + timeout:
         swap_status = check_swap(uuid)
         if conn:

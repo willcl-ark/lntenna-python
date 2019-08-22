@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import simplejson as json
 
-from lntenna.database.db import cli_lookup_swap_tx, cli_lookup_uuid, mesh_add_sat_request
+from lntenna.database.db import mesh_get_swap_tx, mesh_get_uuid, mesh_add_sat_request
 from lntenna.gotenna.connection import Connection
 
 
@@ -162,7 +162,7 @@ class Lntenna(cmd.Cmd):
         :param uuid: str
         """
         uuid = str(uuid)
-        tx_hash, tx_hex = cli_lookup_swap_tx(uuid)
+        tx_hash, tx_hex = mesh_get_swap_tx(uuid)
         swap_tx_msg = {"swap_tx": {"tx_hash": tx_hash, "tx_hex": tx_hex, "uuid": uuid}}
         print(f"Successfully looked up swap in the db:\n{pformat(swap_tx_msg)}")
         self.conn.send_jumbo(swap_tx_msg)
@@ -174,7 +174,7 @@ class Lntenna(cmd.Cmd):
         :param uuid: str
         """
         uuid = str(uuid)
-        order = cli_lookup_uuid(uuid)
+        order = mesh_get_uuid(uuid)
         pprint(order)
 
     def do_check_swap_status(self, uuid):

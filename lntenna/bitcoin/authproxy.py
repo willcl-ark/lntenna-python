@@ -55,7 +55,7 @@ USER_AGENT = "AuthServiceProxy/0.1"
 log = logging.getLogger("BitcoinRPC")
 
 
-def service_url():
+def make_service_url():
     url = f"http://"
     url += f"{CONFIG['bitcoin']['RPC_USER']}:"
     url += f"{CONFIG['bitcoin']['RPC_PASSWORD']}"
@@ -76,7 +76,7 @@ class JSONRPCException(Exception):
         self.http_status = http_status
 
 
-def EncodeDecimal(o):
+def encode_decimal(o):
     if isinstance(o, decimal.Decimal):
         return str(o)
     raise TypeError(repr(o) + " is not JSON serializable")
@@ -88,7 +88,7 @@ class AuthServiceProxy:
     # ensure_ascii: escape unicode as \uXXXX, passed to json.dumps
     def __init__(
         self,
-        service_url=service_url(),
+        service_url=make_service_url(),
         service_name=None,
         timeout=HTTP_TIMEOUT,
         connection=None,
@@ -120,7 +120,8 @@ class AuthServiceProxy:
     def _request(self, method, path, postdata):
         """
         Do a HTTP request, with retry if we get disconnected (e.g. due to a timeout).
-        This is a workaround for https://bugs.python.org/issue3566 which is fixed in Python 3.5.
+        This is a workaround for https://bugs.python.org/issue3566 which is fixed in
+        Python 3.5.
         """
         headers = {
             "Host": self.__url.hostname,
@@ -130,7 +131,8 @@ class AuthServiceProxy:
         }
         if os.name == "nt":
             # Windows somehow does not like to re-use connections
-            # TODO: Find out why the connection would disconnect occasionally and make it reusable on Windows
+            # TODO: Find out why the connection would disconnect occasionally and make
+            #  it reusable on Windows
             self._set_conn()
         try:
             self.__conn.request(method, path, postdata, headers)
@@ -143,7 +145,8 @@ class AuthServiceProxy:
             else:
                 raise
         except (BrokenPipeError, ConnectionResetError):
-            # Python 3.5+ raises BrokenPipeError instead of BadStatusLine when the connection was reset
+            # Python 3.5+ raises BrokenPipeError instead of BadStatusLine when the
+            # connection was reset
             # ConnectionResetError happens on FreeBSD with Python 3.4
             self.__conn.close()
             self.__conn.request(method, path, postdata, headers)
@@ -157,7 +160,7 @@ class AuthServiceProxy:
                 AuthServiceProxy.__id_count,
                 self._service_name,
                 json.dumps(
-                    args or argsn, default=EncodeDecimal, ensure_ascii=self.ensure_ascii
+                    args or argsn, default=encode_decimal, ensure_ascii=self.ensure_ascii
                 ),
             )
         )
@@ -173,7 +176,7 @@ class AuthServiceProxy:
     def __call__(self, *args, **argsn):
         postdata = json.dumps(
             self.get_request(*args, **argsn),
-            default=EncodeDecimal,
+            default=encode_decimal,
             ensure_ascii=self.ensure_ascii,
         )
         response, status = self._request(
@@ -198,7 +201,7 @@ class AuthServiceProxy:
 
     def batch(self, rpc_call_list):
         postdata = json.dumps(
-            list(rpc_call_list), default=EncodeDecimal, ensure_ascii=self.ensure_ascii
+            list(rpc_call_list), default=encode_decimal, ensure_ascii=self.ensure_ascii
         )
         log.debug("--> " + postdata)
         response, status = self._request(
@@ -254,7 +257,7 @@ class AuthServiceProxy:
                     elapsed,
                     json.dumps(
                         response["result"],
-                        default=EncodeDecimal,
+                        default=encode_decimal,
                         ensure_ascii=self.ensure_ascii,
                     ),
                 )

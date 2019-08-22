@@ -11,5 +11,5 @@ def get_swap_quote(uuid: str, invoice: str, network: str, refund_addr: str):
         url=CONFIG["swap"]["URL"], network=network, invoice=invoice, refund=refund_addr
     )
     # add the swap to the swap table
-    db.add_swap(uuid=uuid, result=result.json())
+    db.swaps_add_swap_quote(uuid=uuid, result=result.json())
     return result

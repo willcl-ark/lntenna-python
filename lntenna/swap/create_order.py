@@ -1,5 +1,4 @@
 import logging
-from uuid import uuid4
 
 from blocksat_api import blocksat
 
@@ -20,11 +19,11 @@ def create_order(message: str, bid: str, network: str, uuid):
         satellite_url = CONFIG["blocksat"]["MAINNET_URL"]
     else:
         return {"response": "Invalid network"}
-    db.add_order(uuid=uuid, message=message, network=network)
+    db.orders_add_order(uuid=uuid, message=message, network=network)
     result = blocksat.place(message=message, bid=bid, satellite_url=satellite_url)
     if result.status_code == 200:
         try:
-            db.add_blocksat(
+            db.satellite_add_quote(
                 uuid=uuid, satellite_url=satellite_url, result=result.json()
             )
         except Exception as e:

@@ -263,7 +263,7 @@ def lnencode(addr, privkey):
     # both.
     if "d" in tags_set and "h" in tags_set:
         raise ValueError("Cannot include both 'd' and 'h'")
-    if not "d" in tags_set and not "h" in tags_set:
+    if "d" not in tags_set and "h" not in tags_set:
         raise ValueError("Must include either 'd' or 'h'")
 
     # We actually sign the hrp, then data (padded to 8 bits with zeroes).
@@ -316,7 +316,7 @@ def lndecode(a, verbose=False):
     # Final signature 65 bytes, split it off.
     if len(data) < 65 * 8:
         raise ValueError("Too short to contain signature")
-    sigdecoded = data[-65 * 8 :].tobytes()
+    sigdecoded = data[-65 * 8:].tobytes()
     data = bitstring.ConstBitStream(data[: -65 * 8])
 
     addr = LnAddr()
@@ -325,7 +325,7 @@ def lndecode(a, verbose=False):
     m = re.search("[^\d]+", hrp[2:])
     if m:
         addr.currency = m.group(0)
-        amountstr = hrp[2 + m.end() :]
+        amountstr = hrp[2 + m.end():]
         # BOLT #11:
         #
         # A reader SHOULD indicate if amount is unspecified, otherwise it MUST

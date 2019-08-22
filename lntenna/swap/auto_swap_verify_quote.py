@@ -1,6 +1,6 @@
 import logging
 from binascii import hexlify
-from pprint import pformat, pprint
+from pprint import pformat
 
 from lntenna.bitcoin import AuthServiceProxy, SATOSHIS
 
@@ -9,7 +9,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from lntenna.database import mesh_add_verify_quote, lookup_network
+from lntenna.database import mesh_add_verify_quote, orders_get_network
 from lntenna.gotenna.utilities import log
 from lntenna.lightning.lnaddr import lndecode
 from lntenna.server.config import CONFIG
@@ -53,7 +53,7 @@ def auto_swap_verify_quote(message, cli=False):
     amount = f'{message["am"] / SATOSHIS:.8f}'
     if cli:
         # lookup network using UUID from db
-        network = lookup_network(message["u"])
+        network = orders_get_network(message["u"])
         log(
             f"\nAre you happy to proceed with creating the below transaction to fulfill"
             f" swap request:\n"

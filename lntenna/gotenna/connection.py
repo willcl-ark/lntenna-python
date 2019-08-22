@@ -239,7 +239,8 @@ class Connection:
                         {
                             "send_broadcast": {
                                 "status": "failed",
-                                "reason": "message may not have been sent: USB connection disrupted",
+                                "reason": "message may not have been sent: USB "
+                                          "connection disrupted",
                             }
                         }
                     )

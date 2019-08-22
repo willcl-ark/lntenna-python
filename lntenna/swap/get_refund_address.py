@@ -1,4 +1,3 @@
-import lntenna.database as db
 from lntenna.bitcoin.authproxy import AuthServiceProxy
 from lntenna.swap.utilities import try_json
 

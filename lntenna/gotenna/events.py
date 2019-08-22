@@ -58,7 +58,7 @@ class Events:
                     self.msg.put(msg)
         return returned_msgs
 
-    def get_text_messages(self, jumbo=False):
+    def get_text_messages(self):
         """Returns a dict, where the first entry contains a list of messages received
         from newest to oldest"""
         msgs = []

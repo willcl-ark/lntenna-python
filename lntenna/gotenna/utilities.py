@@ -133,7 +133,7 @@ def segment(msg, segment_size: int):
     msg_list = []
     for i in range(0, msg_length, segment_size):
         header = f"{prefix}/{(i // segment_size) + 1}/{num_segments}/"
-        msg_list.append(header + msg[i : i + segment_size])
+        msg_list.append(header + msg[i: i + segment_size])
     return msg_list
 
 
