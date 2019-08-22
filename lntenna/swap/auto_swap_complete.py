@@ -52,7 +52,8 @@ def monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=None):
                 f"{swap_status['response']['payment_secret']}",
                 cli,
             )
-            return swap_status["response"]["payment_secret"]
+            db.swaps_add_preimage(uuid, swap_status["response"]["payment_secret"])
+            return swap_status
         time.sleep(interval)
     return swap_status["response"]
 

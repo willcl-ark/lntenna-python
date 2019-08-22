@@ -157,6 +157,16 @@ def swaps_add_swap_quote(uuid, result):
         raise e
 
 
+def swaps_add_preimage(uuid, preimage):
+    conn = engine.connect()
+    up = swaps.update().where(
+            swaps.c.uuid == uuid).values(payment_secret=preimage)
+    try:
+        conn.execute(up)
+    except IntegrityError as e:
+        raise e
+
+
 def orders_add_txid(uuid, txid):
     conn = engine.connect()
     up = orders.update().where(orders.c.uuid == uuid).values(txid=txid)
@@ -251,13 +261,13 @@ def mesh_add_verify_quote(
             raise e
 
 
-def swap_get_payment_hash(uuid):
+def mesh_get_payment_hash(uuid):
     conn = engine.connect()
     s = select([mesh.c.payment_hash]).where(mesh.c.uuid == uuid)
     return conn.execute(s).fetchone().values()[0]
 
 
-def swap_add_preimage(uuid, preimage):
+def mesh_add_preimage(uuid, preimage):
     conn = engine.connect()
     up = (
         mesh.update()
