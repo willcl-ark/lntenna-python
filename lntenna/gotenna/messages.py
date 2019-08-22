@@ -5,13 +5,15 @@ from time import sleep, time
 import requests
 import simplejson as json
 
-from lntenna.database import init as init_db, swap_lookup_payment_hash
+from lntenna.database import init as init_db, swap_lookup_payment_hash, orders_lookup_swap_details
 from lntenna.gotenna.utilities import de_segment, prepare_api_request
 from lntenna.swap import (
     auto_swap_complete,
     auto_swap_create,
     auto_swap_verify_preimage,
     auto_swap_verify_quote,
+    monitor_swap_status,
+    check_swap,
 )
 
 MSG_CODES = [
@@ -111,15 +113,40 @@ def handle_known_msg(conn, message):
             except Exception:
                 conn.log(v)
 
-        # if k == "swap_check":
-        #     conn.log("Processing a swap_check message")
-        #     # TODO: if we retrieve tx here we can query bitcoind to see if
-        #     #   mainnet tx has at least 3 confirmations to minimise SSS
-        #     #   calls
-        #     thread = threading.Thread(
-        #         target=mesh_check_swap, args=(v["uuid"], conn.send_broadcast)
-        #     )
-        #     thread.start()
+        if k == "swap_check":
+            conn.log("Processing a swap_check message")
+            # TODO: if we retrieve tx here we could query bitcoind to see if
+            #   mainnet tx has at least 3 confirmations to minimise SSS
+            #   calls
+            network = invoice = redeem_script = None
+            # Lookup the relevant details from the db
+            network, invoice, redeem_script = orders_lookup_swap_details(v["uuid"])
+            if network and invoice and redeem_script:
+                conn.log(f"Successfully looked up details for swap_check")
+            else:
+                conn.send_broadcast(f"swap_check for uuid: {v['uuid']} could not find "
+                                    f"order details for lookup in database")
+                return
+
+            # Check the status and return it initially as a first repsonse
+            swap_status = check_swap(v["uuid"])
+            if "payment_secret" in swap_status["response"]:
+                conn.send_broadcast(
+                        f"Swap complete. Preimage: "
+                        f"{swap_status['response']['payment_secret']}"
+                )
+                return
+            else:
+                conn.send_broadcast(f"Swap incomplete: {swap_status['response']}")
+
+            # If not complete, start a thread to monitor status intermittently or
+            # intelligently based on SSS required confs for mainnet
+            monitor_status = threading.Thread(
+                    target=monitor_sss,
+                    args=[v["uuid"], conn, 30, 1200],
+            )
+            monitor_status.start()
+
 
 
 def handle_jumbo_message(conn, message):
@@ -173,3 +200,8 @@ def monitor_jumbo_msgs(conn, timeout=30):
             "Please request the message again from the remote host."
         )
     return
+
+
+def monitor_sss(uuid, conn, interval=30, timeout=1200):
+    status = monitor_swap_status(uuid, conn.cli, interval, timeout, conn)
+    conn.send_broadcast(json.dumps(status))

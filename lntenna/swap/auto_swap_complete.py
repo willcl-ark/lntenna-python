@@ -37,20 +37,23 @@ def broadcast_transaction(uuid, tx_hex, cli):
     return tx_hash
 
 
-def monitor_swap_status(uuid, cli):
+def monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=None):
     log("Starting swap status monitor", cli)
-
-    while True:
+    start = time.time()
+    swap_status = None
+    while True and time.time() < start + timeout:
         swap_status = check_swap(uuid)
-        if "response" in swap_status:
-            if "payment_secret" in swap_status["response"]:
-                log(
-                    f"Payment secret detected:\n"
-                    f"{swap_status['response']['payment_secret']}",
-                    cli,
-                )
-                return swap_status["response"]["payment_secret"]
-        time.sleep(5)
+        if conn:
+            conn.log(f"Swap status: {swap_status}")
+        if "payment_secret" in swap_status["response"]:
+            log(
+                f"Payment secret detected:\n"
+                f"{swap_status['response']['payment_secret']}",
+                cli,
+            )
+            return swap_status["response"]["payment_secret"]
+        time.sleep(interval)
+    return swap_status["response"]
 
 
 def auto_swap_complete(uuid, tx_hex, cli):

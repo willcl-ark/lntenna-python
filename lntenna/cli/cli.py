@@ -12,7 +12,7 @@ from lntenna.gotenna.connection import Connection
 
 class Lntenna(cmd.Cmd):
     intro = (
-        "Send a Blockstream Blocksat message using GoTenna meshnet. "
+        "Send a Blockstream Satellite message via GoTenna meshnet. "
         "Type help or ? to list commands.\n"
     )
     prompt = "(lntenna) "
@@ -75,6 +75,7 @@ class Lntenna(cmd.Cmd):
 
     def do_can_connect(self, arg):
         """Return whether a GoTenna can connect
+
         For a GoTenna to connect, a GID and RF setting must be configured
         """
         self.conn.can_connect()
@@ -101,7 +102,8 @@ class Lntenna(cmd.Cmd):
         self.conn.send_broadcast(message)
 
     def do_send_sat_msg(self, arg):
-        """Send a message via the Blockstream Blocksat
+        """Send a message via the Blockstream Satellite service
+
         Run with no parameters and you will be prompted for additional details
         Network must be either exactly 'mainnet' or 'testnet'
         """
@@ -150,7 +152,13 @@ class Lntenna(cmd.Cmd):
                 self.conn.send_jumbo(json.dumps(req))
 
     def do_resend_swap_tx(self, uuid):
-        """Resend the "swap_tx" message to the gateway for the specified UUID
+        """Resend the "swap_tx" message to the GATEWAY for the specified UUID
+
+        This is useful if the messaging or automatic workflow was interrupted.
+        GATEWAY will automatically upload the tx_hex to the Bitcoin P2P network
+        and the submarine swap server will detect this and attempt to
+        fulfill the invoice automatically.
+
         :param uuid: str
         """
         uuid = str(uuid)
@@ -160,13 +168,25 @@ class Lntenna(cmd.Cmd):
         self.conn.send_jumbo(swap_tx_msg)
 
     def do_lookup_order(self, uuid):
-        """Lookup order details for a provided lntenna UUID
+        """Lookup order details for a provided lntenna UUID from
+         $HOME/.lntenna/database.db TABLE = MESH
 
         :param uuid: str
         """
         uuid = str(uuid)
         order = cli_lookup_uuid(uuid)
         pprint(order)
+
+    def do_check_swap_status(self, uuid):
+        """Manually check swap status with the GATEWAY via gotenna broadcast message
+
+        This call will return a single response with current status, then monitor the
+        status for a further 1200 seconds (or until completion), returning the result
+        in a second broadcast message.
+
+        :param uuid: str
+        """
+        self.conn.send_broadcast(json.dumps({"swap_check": {"uuid": uuid}}))
 
     @staticmethod
     def do_exit(arg):

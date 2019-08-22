@@ -1,4 +1,4 @@
-from lntenna.swap.auto_swap_complete import auto_swap_complete
+from lntenna.swap.auto_swap_complete import auto_swap_complete, monitor_swap_status
 from lntenna.swap.auto_swap_create import auto_swap_create
 from lntenna.swap.auto_swap_verify_quote import auto_swap_verify_quote
 from lntenna.swap.auto_swap_verify_preimage import auto_swap_verify_preimage

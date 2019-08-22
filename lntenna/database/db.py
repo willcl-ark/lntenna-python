@@ -200,7 +200,7 @@ def lookup_pay_details(uuid):
     return conn.execute(s).fetchone().values()
 
 
-def lookup_swap_details(uuid):
+def orders_lookup_swap_details(uuid):
     conn = engine.connect()
     s = select([orders.c.network, swaps.c.invoice, swaps.c.redeem_script]).where(
         or_(swaps.c.uuid == uuid, orders.c.uuid == uuid)
