@@ -9,11 +9,15 @@ try:
 except ModuleNotFoundError:
     pass
 
-from lntenna.database import mesh_add_verify_quote, orders_get_network
+from lntenna.database import (
+    mesh_add_verify_quote,
+    orders_get_network,
+    mesh_get_refund_addr,
+)
 from lntenna.gotenna.utilities import log
 from lntenna.lightning.lnaddr import lndecode
 from lntenna.server.config import CONFIG
-from lntenna.swap.decode_redeemscript import compare_redeemscript_invoice
+from lntenna.swap.verify_redeemscript import verify_redeem_script
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
@@ -43,11 +47,18 @@ def auto_swap_verify_quote(message, cli=False):
     assert pubkey in CONFIG["blocksat_pubkeys"].values()
     log(f"Pubkey {pubkey} successfully matched to hardcoded keys in config.ini!", cli)
 
-    # check the redeem_script matches the lightning invoice payment_hash
+    # check the redeem_script matches the invoice payment_hash and P2SH address
     log("Checking swap redeem script matches lightning invoice payment hash...", cli)
     payment_hash = decoded_inv.paymenthash.hex()
-    assert compare_redeemscript_invoice(payment_hash, message["rs"])
-    log("Redeem script and payment hash match", cli)
+
+    # get refund address from db
+    refund_addr = mesh_get_refund_addr(message["u"])
+
+    assert verify_redeem_script(payment_hash, message["rs"], refund_addr)
+    log(
+        "Redeem script verified and matched to P2SH address provided by swap server",
+        cli,
+    )
 
     # calculate amount the bitcoin transaction
     amount = f'{message["am"] / SATOSHIS:.8f}'
