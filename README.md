@@ -2,7 +2,9 @@
 
 ## Rationale
 
-Send a Blockstream Satellite message from an off-grid node that has a Blockstream Satellite-connected instance of bitcoind running, satisfying the Satellite transmission lightning invoice via GoTenna meshnet.
+A node, MESH1, does not have WAN (internet) upload or download capability, but can receive the blockchain download-only via Blockstream Satellite connection. It also has a two-way goTenna meshnet connection to another meshnet-connected host, GATEWAY, that has WAN upload and download capability and will perform certain tasks on its behalf. 
+
+MESH1 would like to send a Blockstream Satellite message whilst off-grid. Required payment method for this message is a bitcoin-lightning invoice.
 
 There are two general approaches to achieving this using GoTenna meshnet, each involving one internet-connected node, GATEWAY, and one off-grid node, MESH1, connected only to the GATEWAY via GoTenna meshnet devices. MESH1 will require bitcoind and optionally a Blockstream Satellite receiver to verify sent messages (not integrated into lntenna currently. GATEWAY can optionally run bitcoind. The two approaches are:
 
