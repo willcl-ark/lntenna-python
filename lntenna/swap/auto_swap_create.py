@@ -3,7 +3,7 @@ from pprint import pformat
 
 from lntenna.gotenna.utilities import log
 from lntenna.server.config import CONFIG
-from lntenna.swap.create_order import create_order
+from lntenna.swap.create_blocksat_order import create_blocksat_order
 from lntenna.swap.get_invoice_details import get_invoice_details
 from lntenna.swap.get_swap_quote import get_swap_quote
 
@@ -36,7 +36,7 @@ def auto_swap_create(request, cli):
 
     # create blocksat order
     # TODO: Add some bid creation logic here or somewhere else...
-    blocksat_order = create_order(
+    blocksat_order = create_blocksat_order(
         message=message, bid="10000", network=blocksat_network, uuid=uuid
     )
 

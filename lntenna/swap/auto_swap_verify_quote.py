@@ -54,7 +54,7 @@ def auto_swap_verify_quote(message, cli=False):
     # get refund address from db
     refund_addr = mesh_get_refund_addr(message["u"])
 
-    assert verify_redeem_script(payment_hash, message["rs"], refund_addr)
+    assert verify_redeem_script(payment_hash, message["rs"], message['ad'], refund_addr)
     log(
         "Redeem script verified and matched to P2SH address provided by swap server",
         cli,
