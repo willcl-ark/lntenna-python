@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
 
 @try_json
-def create_order(message: str, bid: str, network: str, uuid):
+def create_blocksat_order(message: str, bid: str, network: str, uuid):
     logger.debug("Creating blocksat order")
     if network.strip().lower() == "testnet":
         satellite_url = CONFIG["blocksat"]["TESTNET_URL"]

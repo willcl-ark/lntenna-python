@@ -9,11 +9,15 @@ try:
 except ModuleNotFoundError:
     pass
 
-from lntenna.database import mesh_add_verify_quote, orders_get_network
+from lntenna.database import (
+    mesh_add_verify_quote,
+    orders_get_network,
+    mesh_get_refund_addr,
+)
 from lntenna.gotenna.utilities import log
 from lntenna.lightning.lnaddr import lndecode
 from lntenna.server.config import CONFIG
-from lntenna.swap.decode_redeemscript import compare_redeemscript_invoice
+from lntenna.swap.verify_redeemscript import verify_redeem_script
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
@@ -40,14 +44,33 @@ def auto_swap_verify_quote(message, cli=False):
     # Check the Pubkey from the invoice matches hardcoded keys
     log("Checking decoded pubkey matches known blockstream pubkeys...", cli)
     pubkey = hexlify(decoded_inv.pubkey.serialize()).decode("utf-8")
-    assert pubkey in CONFIG["blocksat_pubkeys"].values()
-    log(f"Pubkey {pubkey} successfully matched to hardcoded keys in config.ini!", cli)
+    if pubkey in CONFIG["blocksat_pubkeys"].values():
+        log(
+            f"Pubkey {pubkey} successfully matched to hardcoded keys in config.ini!",
+            cli,
+        )
+    else:
+        log(f"Pubkey {pubkey} not matched to hardcoded keys in config.ini!", cli)
+        return False
 
-    # check the redeem_script matches the lightning invoice payment_hash
+    # check the redeem_script matches the invoice payment_hash and P2SH address
     log("Checking swap redeem script matches lightning invoice payment hash...", cli)
     payment_hash = decoded_inv.paymenthash.hex()
-    assert compare_redeemscript_invoice(payment_hash, message["rs"])
-    log("Redeem script and payment hash match", cli)
+
+    # get refund address from db
+    refund_addr = mesh_get_refund_addr(message["u"])
+
+    if verify_redeem_script(payment_hash, message["rs"], message["ad"], refund_addr):
+        log(
+            "Redeem script verified and matched to P2SH address provided by swap server",
+            cli,
+        )
+    else:
+        log(
+            "Redeem script NOT verified and matched to P2SH address provided by swap server",
+            cli,
+        )
+        return False
 
     # calculate amount the bitcoin transaction
     amount = f'{message["am"] / SATOSHIS:.8f}'
@@ -69,11 +92,17 @@ def auto_swap_verify_quote(message, cli=False):
     # setup the transaction
     try:
         result["tx_hash"] = proxy.sendtoaddress(message["ad"], amount)
-    except Exception:
+    except Exception as e1:
         if BITCOIND_PW:
-            proxy.walletpassphrase(BITCOIND_PW, 60)
-            result["tx_hash"] = proxy.sendtoaddress(message["ad"], amount)
-            proxy.walletlock()
+            try:
+                proxy.walletpassphrase(BITCOIND_PW, 60)
+                result["tx_hash"] = proxy.sendtoaddress(message["ad"], amount)
+                proxy.walletlock()
+            except Exception as e2:
+                log(
+                    f"raised errors during transaction construction: \n {e1}\n {e2}",
+                    cli,
+                )
 
     tx_hash = proxy.gettransaction(result["tx_hash"])
     result["tx_hex"] = tx_hash["hex"]

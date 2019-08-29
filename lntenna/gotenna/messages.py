@@ -95,7 +95,8 @@ def handle_known_msg(conn, message):
                 swap_tx = auto_swap_verify_quote(v, conn.cli)
             else:
                 swap_tx = auto_swap_verify_quote(v)
-            conn.send_jumbo(json.dumps(swap_tx))
+            if swap_tx is not False:
+                conn.send_jumbo(json.dumps(swap_tx))
 
         if k == "swap_tx":
             conn.log("Processing a swap_tx message")
