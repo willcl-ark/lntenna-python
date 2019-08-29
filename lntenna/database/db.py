@@ -295,7 +295,7 @@ def mesh_get_network(uuid):
 def mesh_get_refund_addr(uuid):
     conn = engine.connect()
     s = select([mesh.c.refund_address]).where(mesh.c.uuid == uuid)
-    return conn.execute(s).fetchone().values()
+    return conn.execute(s).fetchone().values()[0]
 
 
 def mesh_get_uuid(uuid):
