@@ -292,6 +292,12 @@ def mesh_get_network(uuid):
     return conn.execute(s).fetchone().values()
 
 
+def mesh_get_refund_addr(uuid):
+    conn = engine.connect()
+    s = select([mesh.c.refund_address]).where(mesh.c.uuid == uuid)
+    return conn.execute(s).fetchone().values()[0]
+
+
 def mesh_get_uuid(uuid):
     conn = engine.connect()
     s = select([c for c in mesh.columns]).where(mesh.c.uuid == uuid)
