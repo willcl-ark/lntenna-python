@@ -110,6 +110,8 @@ class Lntenna(cmd.Cmd):
         if arg == "":
             message = input("Message: ")
             r = r2 = None
+            # TODO: ask for the network first, then grab the refund address from config
+            #   file for that network automagically
             if self.refund_address:
                 r = input(
                     f"Do you want to use {self.refund_address} from config file as the "

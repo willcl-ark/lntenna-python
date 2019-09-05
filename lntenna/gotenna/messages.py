@@ -125,7 +125,7 @@ def handle_known_msg(conn, message):
         if k == "swap_check":
             conn.log("Processing a swap_check message")
             # TODO: if we retrieve tx here we could query bitcoind to see if
-            #   mainnet tx has at least 3 confirmations to minimise SSS
+            #   mainnet tx has at least 1 confirmation to minimise SSS
             #   calls
             # Lookup the relevant details from the db
             network, invoice, redeem_script = query_swap_details(v["uuid"])

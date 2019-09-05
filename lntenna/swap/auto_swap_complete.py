@@ -6,7 +6,7 @@ from pprint import pformat
 from submarine_api import broadcast_tx
 
 import lntenna.database as db
-from lntenna.bitcoin import AuthServiceProxy
+from lntenna.bitcoin import AuthServiceProxy, make_service_url
 from lntenna.gotenna.utilities import log
 from lntenna.server.config import CONFIG
 from lntenna.swap.check_swap import check_swap
@@ -14,11 +14,10 @@ from lntenna.swap.check_swap import check_swap
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
-proxy = AuthServiceProxy()
-
 
 def broadcast_transaction(uuid, tx_hex, cli):
     network = db.orders_get_network(uuid)
+    proxy = AuthServiceProxy(service_url=make_service_url(network))
     log(f"Broadcasting transaction", cli)
     try:
         proxy.getbalance()

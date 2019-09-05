@@ -2,7 +2,7 @@ import logging
 from binascii import hexlify
 from pprint import pformat
 
-from lntenna.bitcoin import AuthServiceProxy, SATOSHIS
+from lntenna.bitcoin import AuthServiceProxy, SATOSHIS, make_service_url
 
 try:
     from lntenna.server.bitcoind_password import BITCOIND_PW
@@ -21,8 +21,6 @@ from lntenna.swap.verify_redeemscript import verify_redeem_script
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
-
-proxy = AuthServiceProxy()
 
 
 def auto_swap_verify_quote(message, cli=False):
@@ -72,11 +70,12 @@ def auto_swap_verify_quote(message, cli=False):
         )
         return False
 
-    # calculate amount the bitcoin transaction
+    # lookup network using UUID from db
+    network = orders_get_network(message["u"])
+
+    # calculate amount the bitcoin transaction and require user confirmation
     amount = f'{message["am"] / SATOSHIS:.8f}'
     if cli:
-        # lookup network using UUID from db
-        network = orders_get_network(message["u"])
         log(
             f"\nAre you happy to proceed with creating the below transaction to fulfill"
             f" swap request:\n"
@@ -90,6 +89,7 @@ def auto_swap_verify_quote(message, cli=False):
             return
 
     # setup the transaction
+    proxy = AuthServiceProxy(service_url=make_service_url(network))
     try:
         result["tx_hash"] = proxy.sendtoaddress(message["ad"], amount)
     except Exception as e1:
