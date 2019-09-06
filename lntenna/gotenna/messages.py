@@ -113,17 +113,16 @@ def handle_known_msg(conn, message):
                 try:
                     payment_hash = mesh_get_payment_hash(v["uuid"])
                     if auto_swap_verify_preimage(
-                        v["uuid"],
-                        v["payment_secret"],
-                        payment_hash,
-                        conn.cli
+                        v["uuid"], v["payment_secret"], payment_hash, conn.cli
                     ):
                         conn.log(f"Swap complete:\n{pformat(v)}")
                 except Exception:
                     conn.log(v)
             else:
-                conn.log(f"Swap incomplete at this time, run 'check_swap_status' "
-                         f"command to manually start another swap monitor")
+                conn.log(
+                    f"Swap incomplete at this time, run 'check_swap_status' "
+                    f"command to manually start another swap monitor"
+                )
 
         if k == "swap_check":
             conn.log("Processing a swap_check message")
@@ -162,7 +161,7 @@ def handle_known_msg(conn, message):
             # If not complete, start a thread to monitor status intermittently or
             # intelligently based on SSS required confs for mainnet
             monitor_status = threading.Thread(
-                target=monitor_sss, args=[v["uuid"], conn, 30, 1200]
+                target=monitor_sss, args=[v["uuid"], conn, None, 30, 1200]
             )
             monitor_status.start()
 
@@ -220,6 +219,6 @@ def monitor_jumbo_msgs(conn, timeout=30):
     return
 
 
-def monitor_sss(uuid, conn, interval=30, timeout=1200):
-    status = monitor_swap_status(uuid, conn.cli, interval, timeout, conn)
+def monitor_sss(uuid, conn, tx_hex, interval=30, timeout=1200):
+    status = monitor_swap_status(uuid, conn.cli, tx_hex, interval, timeout, conn)
     conn.send_broadcast(json.dumps(status))
