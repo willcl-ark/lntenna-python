@@ -176,15 +176,14 @@ class Lntenna(cmd.Cmd):
         order = mesh_get_uuid(uuid)
         pprint(order)
 
-    def do_check_swap_status(self, uuid):
+    def do_check_swap_status(self, arg):
         """Manually check swap status with the GATEWAY via gotenna broadcast message
 
         This call will return a single response with current status, then monitor the
         status for a further 1200 seconds (or until completion), returning the result
         in a second broadcast message.
-
-        :param uuid: str
         """
+        uuid = input("Please enter the UUID of the order you would like to check: ")
         self.conn.send_broadcast(json.dumps({"swap_check": {"uuid": uuid}}))
 
     @staticmethod
