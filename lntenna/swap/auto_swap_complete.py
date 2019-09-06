@@ -36,7 +36,7 @@ def broadcast_transaction(uuid, tx_hex, cli):
     return tx_hash
 
 
-def monitor_swap_status(uuid, cli, interval, timeout, conn=None):
+def monitor_swap_status(uuid, cli, tx_hex, interval, timeout, conn=None):
     conn.log(
         f"Starting swap status monitor for {timeout} seconds with an interval "
         f"of {interval} seconds."
@@ -48,6 +48,9 @@ def monitor_swap_status(uuid, cli, interval, timeout, conn=None):
     while True and time.time() < start + timeout:
         swap_status = check_swap(uuid)
         tries += 1
+        # manual rebroadcast every 2 minutes
+        if tries % 24 == 0:
+            broadcast_transaction(uuid, tx_hex, cli)
         if conn:
             conn.log(f"Swap status try {tries}:\n{pformat(swap_status)}")
         if "payment_secret" in swap_status["response"]:
@@ -71,11 +74,13 @@ def auto_swap_complete(uuid, tx_hex, cli, conn):
     if network == "mainnet":
         # if mainnet use longer interval and timeout as SSS needs 1 confirmation
         swap_status = monitor_swap_status(
-            uuid, cli, interval=30, timeout=720, conn=conn
+            uuid, cli, tx_hex, interval=30, timeout=720, conn=conn
         )
     else:
         # if testnet, monitor at quicker interval and lower timeout
-        swap_status = monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=conn)
+        swap_status = monitor_swap_status(
+            uuid, cli, tx_hex, interval=5, timeout=300, conn=conn
+        )
     if "payment_secret" in swap_status["response"]:
         conn.log(f"Swap complete!:\n{pformat(swap_status['response'])}")
         result["payment_secret"] = swap_status["response"]["payment_secret"]
