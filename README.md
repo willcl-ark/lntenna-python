@@ -50,6 +50,28 @@ This project is currently attempting to implement #2 as a stepping stone towards
     or
 
     `pip install -r requirements.txt`
+
+#### Setup issues
+
+* Decoding of lightning invoices can fail if a system version of secp256k1 is installed which has not been compiled with the required flags, resulting in an error similar to:
+
+`Exception("secp256k1_recovery not enabled")`
+
+If you encounter this error, re-install libsecp256k1 for your system using the `--enable-module-recovery` flag:
+
+```shell script
+$ git clone https://github.com/bitcoin-core/secp256k1
+$ cd secp256k1
+$ ./autogen.sh
+$ ./configure --enable-module-recovery
+$ make
+$ make check
+$ sudo make install   # Optional, recommended
+```
+
+Next, uninstall and re-install the virtual environment libsecp256k1 module:
+
+`pip uninstall secp256k1 && pip install secp256k`
     
 ## Testing
 
