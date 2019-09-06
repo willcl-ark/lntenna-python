@@ -5,7 +5,7 @@ from pprint import pformat
 from submarine_api import broadcast_tx
 
 import lntenna.database as db
-from lntenna.bitcoin import AuthServiceProxy, make_service_url
+from lntenna.bitcoin import AuthServiceProxy, make_service_url, JSONRPCException
 from lntenna.gotenna.utilities import log
 from lntenna.server.config import CONFIG
 from lntenna.swap.check_swap import check_swap
@@ -54,7 +54,11 @@ def monitor_swap_status(uuid, cli, tx_hex, interval, timeout, conn=None):
         tries += 1
         # manual rebroadcast every 2 minutes
         if tries % 24 == 0:
-            broadcast_transaction(uuid, tx_hex, cli)
+            try:
+                broadcast_transaction(uuid, tx_hex, cli)
+            except JSONRPCException as e:
+                conn.log(f"broadcast_transaction error:\n{e}")
+                pass
         if conn:
             conn.log(f"Swap status try {tries}:\n{pformat(swap_status)}")
         if "payment_secret" in swap_status["response"]:
