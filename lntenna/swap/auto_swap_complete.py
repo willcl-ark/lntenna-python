@@ -45,6 +45,10 @@ def monitor_swap_status(uuid, cli, tx_hex, interval, timeout, conn=None):
     swap_status = None
     tries = 0
 
+    # grab the tx_hex if not passed
+    if tx_hex is None:
+        tx_hex = db.orders_get_tx_hex(uuid)
+
     while True and time.time() < start + timeout:
         swap_status = check_swap(uuid)
         tries += 1
@@ -70,6 +74,8 @@ def auto_swap_complete(uuid, tx_hex, cli, conn):
     result = {"uuid": uuid}
     # broadcast the tx
     result["tx_hash"] = broadcast_transaction(uuid, tx_hex, cli)
+    # save tx_hash and tx_hex to db
+    db.orders_add_tx(uuid, result["tx_hash"], tx_hex)
     # monitor the swap status to see when the swap has been fulfilled
     if network == "mainnet":
         # if mainnet use longer interval and timeout as SSS needs 1 confirmation
