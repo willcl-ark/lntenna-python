@@ -1,6 +1,5 @@
 import logging
 import time
-import simplejson as json
 from pprint import pformat
 
 from submarine_api import broadcast_tx
@@ -40,7 +39,7 @@ def broadcast_transaction(uuid, tx_hex, cli):
 def monitor_swap_status(uuid, cli, interval, timeout, conn=None):
     conn.log(
         f"Starting swap status monitor for {timeout} seconds with an interval "
-        f"of {interval} seconds.",
+        f"of {interval} seconds."
     )
     start = time.time()
     swap_status = None
@@ -54,7 +53,7 @@ def monitor_swap_status(uuid, cli, interval, timeout, conn=None):
         if "payment_secret" in swap_status["response"]:
             conn.log(
                 f"Payment secret detected:\n"
-                f"{swap_status['response']['payment_secret']}",
+                f"{swap_status['response']['payment_secret']}"
             )
             db.swaps_add_preimage(uuid, swap_status["response"]["payment_secret"])
             return swap_status
