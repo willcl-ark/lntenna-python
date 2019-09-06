@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="lntenna",
-    version="0.0.2",
+    version="0.0.3",
     author="Will Clark",
     author_email="will8clark@gmail.com",
     description="lntenna and REST API server",
