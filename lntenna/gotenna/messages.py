@@ -121,12 +121,12 @@ def handle_known_msg(conn, message):
                         conn.log(f"Swap complete:\n{pformat(v)}")
                 except Exception:
                     conn.log(v)
+            else:
+                conn.log(f"Swap incomplete at this time, run 'check_swap_status' "
+                         f"command to manually start another swap monitor")
 
         if k == "swap_check":
             conn.log("Processing a swap_check message")
-            # TODO: if we retrieve tx here we could query bitcoind to see if
-            #   mainnet tx has at least 1 confirmation to minimise SSS
-            #   calls
             # Lookup the relevant details from the db
             network, invoice, redeem_script = query_swap_details(v["uuid"])
             if network and invoice and redeem_script:
