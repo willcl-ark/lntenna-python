@@ -69,9 +69,10 @@ def verify_redeem_script(
         raise ScriptAssertionError
 
     # verify redeem script encodes to P2SH address provided by the swap server
+    # hardcode to P2SH-segwit
 
     if decoded_addr["type"] == 'witness_v0_keyhash':
-        if not swap_address == decoded_script["segwit"]["addresses"][0]:
+        if not swap_address == decoded_script["segwit"]["p2sh-segwit"]:
             raise ScriptAssertionError
     else:
         if not swap_address == decoded_script["p2sh"]:
