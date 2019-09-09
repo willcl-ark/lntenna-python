@@ -1,12 +1,11 @@
 import logging
 import time
-import simplejson as json
 from pprint import pformat
 
 from submarine_api import broadcast_tx
 
 import lntenna.database as db
-from lntenna.bitcoin import AuthServiceProxy
+from lntenna.bitcoin import AuthServiceProxy, make_service_url, JSONRPCException
 from lntenna.gotenna.utilities import log
 from lntenna.server.config import CONFIG
 from lntenna.swap.check_swap import check_swap
@@ -14,11 +13,10 @@ from lntenna.swap.check_swap import check_swap
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format=CONFIG["logging"]["FORMAT"])
 
-proxy = AuthServiceProxy()
-
 
 def broadcast_transaction(uuid, tx_hex, cli):
     network = db.orders_get_network(uuid)
+    proxy = AuthServiceProxy(service_url=make_service_url(network))
     log(f"Broadcasting transaction", cli)
     try:
         proxy.getbalance()
@@ -38,24 +36,35 @@ def broadcast_transaction(uuid, tx_hex, cli):
     return tx_hash
 
 
-def monitor_swap_status(uuid, cli, interval, timeout, conn=None):
+def monitor_swap_status(uuid, cli, tx_hex, interval, timeout, conn=None):
     conn.log(
         f"Starting swap status monitor for {timeout} seconds with an interval "
-        f"of {interval} seconds.",
+        f"of {interval} seconds."
     )
     start = time.time()
     swap_status = None
     tries = 0
 
+    # grab the tx_hex if not passed
+    if tx_hex is None:
+        tx_hex = db.orders_get_tx_hex(uuid)
+
     while True and time.time() < start + timeout:
         swap_status = check_swap(uuid)
         tries += 1
+        # manual rebroadcast every 2 minutes
+        if tries % 24 == 0:
+            try:
+                broadcast_transaction(uuid, tx_hex, cli)
+            except JSONRPCException as e:
+                conn.log(f"broadcast_transaction error:\n{e}")
+                pass
         if conn:
             conn.log(f"Swap status try {tries}:\n{pformat(swap_status)}")
         if "payment_secret" in swap_status["response"]:
             conn.log(
                 f"Payment secret detected:\n"
-                f"{swap_status['response']['payment_secret']}",
+                f"{swap_status['response']['payment_secret']}"
             )
             db.swaps_add_preimage(uuid, swap_status["response"]["payment_secret"])
             return swap_status
@@ -69,15 +78,19 @@ def auto_swap_complete(uuid, tx_hex, cli, conn):
     result = {"uuid": uuid}
     # broadcast the tx
     result["tx_hash"] = broadcast_transaction(uuid, tx_hex, cli)
+    # save tx_hash and tx_hex to db
+    db.orders_add_tx(uuid, result["tx_hash"], tx_hex)
     # monitor the swap status to see when the swap has been fulfilled
     if network == "mainnet":
         # if mainnet use longer interval and timeout as SSS needs 1 confirmation
         swap_status = monitor_swap_status(
-            uuid, cli, interval=30, timeout=720, conn=conn
+            uuid, cli, tx_hex, interval=30, timeout=720, conn=conn
         )
     else:
         # if testnet, monitor at quicker interval and lower timeout
-        swap_status = monitor_swap_status(uuid, cli, interval=5, timeout=300, conn=conn)
+        swap_status = monitor_swap_status(
+            uuid, cli, tx_hex, interval=5, timeout=300, conn=conn
+        )
     if "payment_secret" in swap_status["response"]:
         conn.log(f"Swap complete!:\n{pformat(swap_status['response'])}")
         result["payment_secret"] = swap_status["response"]["payment_secret"]

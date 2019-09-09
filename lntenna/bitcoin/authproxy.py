@@ -55,13 +55,19 @@ USER_AGENT = "AuthServiceProxy/0.1"
 log = logging.getLogger("BitcoinRPC")
 
 
-def make_service_url():
+def make_service_url(network):
+    if network == "mainnet":
+        conf = CONFIG["bitcoin_mainnet"]
+    elif network == "testnet":
+        conf = CONFIG["bitcoin_testnet"]
+    else:
+        return False
     url = f"http://"
-    url += f"{CONFIG['bitcoin']['RPC_USER']}:"
-    url += f"{CONFIG['bitcoin']['RPC_PASSWORD']}"
+    url += f"{conf['RPC_USER']}:"
+    url += f"{conf['RPC_PASSWORD']}"
     url += f"@"
-    url += f"{CONFIG['bitcoin']['RPC_HOST']}:"
-    url += f"{CONFIG['bitcoin']['RPC_PORT']}"
+    url += f"{conf['RPC_HOST']}:"
+    url += f"{conf['RPC_PORT']}"
     return url
 
 
@@ -88,7 +94,7 @@ class AuthServiceProxy:
     # ensure_ascii: escape unicode as \uXXXX, passed to json.dumps
     def __init__(
         self,
-        service_url=make_service_url(),
+        service_url=make_service_url("testnet"),
         service_name=None,
         timeout=HTTP_TIMEOUT,
         connection=None,

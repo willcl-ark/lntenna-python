@@ -31,6 +31,7 @@ orders = Table(
     Column("network", String(10)),
     Column("refund_address", String),
     Column("txid", String),
+    Column("tx_hex", String),
 )
 
 # for online node to store blockstream satellite info
@@ -145,6 +146,16 @@ def orders_add_refund_addr(uuid, refund_addr):
         raise e
 
 
+def orders_add_tx(uuid, txid, tx_hex):
+    conn = engine.connect()
+    up = orders.update().where(orders.c.uuid == uuid).values(
+    txid=txid, tx_hex=tx_hex)
+    try:
+        conn.execute(up)
+    except IntegrityError as e:
+        raise e
+
+
 def swaps_add_swap_quote(uuid, result):
     conn = engine.connect()
     ins = swaps.insert()
@@ -202,6 +213,12 @@ def orders_get_refund_addr(uuid):
 def orders_get_network(uuid):
     conn = engine.connect()
     s = select([orders.c.network]).where(orders.c.uuid == uuid)
+    return conn.execute(s).fetchone().values()[0]
+
+
+def orders_get_tx_hex(uuid):
+    conn = engine.connect()
+    s = select([orders.c.tx_hex]).where(orders.c.uuid == uuid)
     return conn.execute(s).fetchone().values()[0]
 
 

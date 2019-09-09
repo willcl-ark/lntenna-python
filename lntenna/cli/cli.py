@@ -6,6 +6,7 @@ from uuid import uuid4
 
 import simplejson as json
 
+from lntenna.server.config import CONFIG
 from lntenna.database.db import mesh_get_swap_tx, mesh_get_uuid, mesh_add_sat_request
 from lntenna.gotenna.connection import Connection
 
@@ -25,6 +26,8 @@ class Lntenna(cmd.Cmd):
         self.geo_region = None
         self.config = False
         self.refund_address = None
+        # self.main_refund_address = None
+        # self.test_refund_address = None
         self.network = None
         super().__init__()
         self.check_for_config()
@@ -34,8 +37,6 @@ class Lntenna(cmd.Cmd):
 
     def check_for_config(self):
         try:
-            from lntenna.server.config import CONFIG
-
             if CONFIG["gotenna"] or CONFIG["bitcoin"]:
                 print("Config file found, loading values")
                 if CONFIG["gotenna"]["SDK_TOKEN"]:
@@ -44,10 +45,10 @@ class Lntenna(cmd.Cmd):
                     self.conn.set_gid(int(CONFIG["gotenna"]["GID"]))
                 if CONFIG["gotenna"]["GEO_REGION"]:
                     self.conn.set_geo_region(int(CONFIG["gotenna"]["GEO_REGION"]))
-                if CONFIG["bitcoin"]["BTC_NETWORK"]:
-                    self.network = CONFIG["bitcoin"]["BTC_NETWORK"]
-                if CONFIG["bitcoin"]["REFUND_ADDR"]:
-                    self.refund_address = CONFIG["bitcoin"]["REFUND_ADDR"]
+                # if CONFIG["bitcoin_mainnet"]["REFUND_ADDR"]:
+                #     self.main_refund_address = CONFIG["bitcoin_mainnet"]["REFUND_ADDR"]
+                # if CONFIG["bitcoin_testnet"]["REFUND_ADDR"]:
+                #     self.test_refund_address = CONFIG["bitcoin_testnet"]["REFUND_ADDR"]
                 self.config = True
                 print("Config values set successfully")
         except Exception:
@@ -110,33 +111,31 @@ class Lntenna(cmd.Cmd):
         if arg == "":
             message = input("Message: ")
             r = r2 = None
-            if self.refund_address:
-                r = input(
-                    f"Do you want to use {self.refund_address} from config file as the "
-                    f"refund address for the swap?\ny/n "
-                ) or "y"
+            # get bitcoin network
+            while True:
+                r2 = input("Which network would you like to use (mainnet or testnet)?: ").lower()
+                if r2 in ["mainnet", "testnet"]:
+                    self.network = r2
+                    self.refund_address = CONFIG[f"bitcoin_{self.network}"]["REFUND_ADDR"]
+                    break
+            n = "m" if self.network == "mainnet" else "t"
+
+            # get refund address
+            r = input(
+                f"Do you want to use {self.refund_address} from config file as the "
+                f"refund address for the swap?\ny/n "
+            ) or "y"
             if r and r.lower() == "y":
                 addr = self.refund_address
             else:
                 addr = input("Refund bitcoin address: ")
-            if self.network:
-                r2 = input(
-                    f'Do you want to use network "{self.network}" from config'
-                    f" file?\ny/n "
-                ) or "y"
-            if r2 and r2.lower() == "y":
-                network = self.network
-            else:
-                network = input("Network (mainnet or testnet: ")
-            assert network.lower() == "mainnet" or "testnet"
-            n = "m" if network.lower() == "mainnet" else "t"
 
             # form the request
             uuid = str(uuid4())[:8]
             req = {"sat_req": {"m": message, "a": addr, "n": n, "u": uuid}}
 
             # add the entry to the database
-            mesh_add_sat_request(message, addr, network, uuid)
+            mesh_add_sat_request(message, addr, n, uuid)
 
             # send it via regular broadcast or jumbo depending on size
             if len(message) < 200:
@@ -177,15 +176,14 @@ class Lntenna(cmd.Cmd):
         order = mesh_get_uuid(uuid)
         pprint(order)
 
-    def do_check_swap_status(self, uuid):
+    def do_check_swap_status(self, arg):
         """Manually check swap status with the GATEWAY via gotenna broadcast message
 
         This call will return a single response with current status, then monitor the
         status for a further 1200 seconds (or until completion), returning the result
         in a second broadcast message.
-
-        :param uuid: str
         """
+        uuid = input("Please enter the UUID of the order you would like to check: ")
         self.conn.send_broadcast(json.dumps({"swap_check": {"uuid": uuid}}))
 
     @staticmethod

@@ -57,7 +57,9 @@ def verify_redeem_script(
         raise ScriptAssertionError
     if not decoded_list[12] == "OP_HASH160":
         raise ScriptAssertionError
-    if not decoded_list[13] == decoded_addr_list[2]:
+    # TODO: this index varies between address formats, 2 for P2PHK and 1 for bech32?
+    #   hardcoding for bech32 currently
+    if not decoded_list[13] == decoded_addr_list[1]:
         raise ScriptAssertionError("Redeem script decoded address mismatch vs database")
     if not decoded_list[14] == "OP_EQUALVERIFY":
         raise ScriptAssertionError
@@ -66,8 +68,13 @@ def verify_redeem_script(
     if not decoded_list[16] == "OP_CHECKSIG":
         raise ScriptAssertionError
 
-    # verify redeem script encodes to P2SH address provided by the swap server
-    if not swap_address == decoded_script["p2sh"]:
-        raise ScriptAssertionError
+    # verify redeem script encodes to P2SH-P2WPHK address provided by the swap server
+
+    if decoded_addr["type"] == 'witness_v0_keyhash':
+        if not swap_address == decoded_script["segwit"]["addresses"][0]:
+            raise ScriptAssertionError("swap address error")
+    else:
+        if not swap_address == decoded_script["p2sh"]:
+            raise ScriptAssertionError("swap address error")
 
     return True

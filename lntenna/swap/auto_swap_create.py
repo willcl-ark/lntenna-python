@@ -62,7 +62,7 @@ def auto_swap_create(request, cli):
             "u": uuid,
             "i": blocksat_order["response"]["lightning_invoice"]["payreq"],
             "am": swap["response"]["swap_amount"],
-            "ad": swap["response"]["swap_p2sh_address"],
+            "ad": swap["response"]["swap_p2wsh_address"],
             "rs": swap["response"]["redeem_script"],
         }
     }

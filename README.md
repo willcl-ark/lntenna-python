@@ -50,6 +50,28 @@ This project is currently attempting to implement #2 as a stepping stone towards
     or
 
     `pip install -r requirements.txt`
+
+#### Setup issues
+
+* Decoding of lightning invoices can fail if a system version of secp256k1 is installed which has not been compiled with the required flags, resulting in an error similar to:
+
+`Exception("secp256k1_recovery not enabled")`
+
+If you encounter this error, re-install libsecp256k1 for your system using the `--enable-module-recovery` flag:
+
+```shell script
+$ git clone https://github.com/bitcoin-core/secp256k1
+$ cd secp256k1
+$ ./autogen.sh
+$ ./configure --enable-module-recovery
+$ make
+$ make check
+$ sudo make install   # Optional, recommended
+```
+
+Next, uninstall and re-install the virtual environment libsecp256k1 module:
+
+`pip uninstall secp256k1 && pip install secp256k`
     
 ## Testing
 
@@ -69,7 +91,7 @@ python lntenna/server/server.py --debug --no-api-server
 
 Once the server is running, you can connect and power on the first GoTenna. Watch the terminal logs for connection messages.
 
-The program can be exited at any time via a KeyboardInterrupt
+The program can be exited at any time via a KeyboardInterrupt (Ctrl + c)
 
 
 #### MESH1 node
@@ -94,7 +116,7 @@ In the CLI app run command `send_sat_msg` and you will be prompted for a `messag
 
 1) When MESH1 receives the quote response, it will parse the BOLT11 invoice and compare it with hardcoded blockstream blocksat node pubkeys from `config.ini`, and then also compare the invoice `payment_hash` with the Submarine Swap `redeem_script`. It will then present the MESH1 terminal with an input to confirm price (combined total of blocksat quote + swap fees).
 
-1) When MESH1 agrees to the cost by entering `y`, MESH1 node will connect to local bitcoind instance and create the appropriate transaction using `bitcoin_rpc.sendtoaddress(address, amount)`. This transaction will not be broadcast immediately due to the bitcoin.conf setting `walletbroadcast=0`, but you will see local balance reduced by amount depending on what UTXOs were consumed.
+1) When MESH1 agrees to the cost by entering `y`, MESH1 node will connect to local bitcoind instance and create the appropriate transaction using `bitcoin_rpc.sendtoaddress(address, amount)`. This transaction will not be broadcast immediately due to the bitcoin.conf setting `walletbroadcast=0`, but you will see local balance reduced by an amount depending on the total of the UTXOs that were consumed.
 
 1) The txid and tx_hex will then automatically be returned via jumbo message to GATEWAY, who will attempt to broadcast it using `bitcoin_rpc.sendrawtx(tx_hex)` if bitcoind is running, otherwise it will broadcast it back via the submarineswaps.org `broadcast_tx` API call.
 
@@ -115,8 +137,7 @@ N.B.:
 
 The application will not automatically resume following this action, but the swap server _will_ still automatically detect the payment and will attempt to fulfill the blocksat lightning invoice, completing the process in the background.
 
-With the relevant details from the console or database (network, invoice and redeem-script) manual API calls the the submarineswaps.org API can still query swap status.
+The status of the swap can be queried at any time from MESH1 using the cli app by running the command `check_swap_status` and providing the 8 character UUID. Running this command will immediately return the current status of the swap, and if not completed, will start a thread on the server to monitor for a further 10 minutes.
 
-TODO: add a cli command to query the swap status from MESH1 via GATEWAY
     
     
