@@ -73,7 +73,7 @@ Next, uninstall and re-install the virtual environment libsecp256k1 module:
 
 `pip uninstall secp256k1 && pip install secp256k`
     
-## Testing
+## Usage
 
 If your GoTenna(s) are paired with another device, un-pair them. Then disconnect them and power them down.
 
