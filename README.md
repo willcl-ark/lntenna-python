@@ -79,14 +79,10 @@ If your GoTenna(s) are paired with another device, un-pair them. Then disconnect
 
 #### GATEWAY node
 
-With the venv active, run the following terminal command to start the GATEWAY server.
-
-* with the `--debug` flag, the server will attempt to parse `["gotenna"]["DEBUG_GID"]` from config.ini in addition to `["gotenna"]["SDK_TOKEN"]` and `["gotenna"]["GEO_REGION"]`to use as the unique GATEWAY GID.
-
-* optionally adding the `--no-api-server` flag will disable the API server, this is a good idea for testing currently as the API service is not fully implemented nor tested.
+With the venv active, run the following terminal command to start the GATEWAY server, it might be a good idea to run in a screen/tmux session as its not a daemon.
 
 ```bash
-python lntenna/server/server.py --debug --no-api-server
+python lntenna/server/server.py
 ```
 
 Once the server is running, you can connect and power on the first GoTenna. Watch the terminal logs for connection messages.
